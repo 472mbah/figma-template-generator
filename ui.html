@@ -1,0 +1,49 @@
+<script>
+  // if (figma.editorType === 'figjam') {
+  //   return;
+  // }
+  // for (const node of figma.currentPage.selection) {
+  //   console.log(node);
+  // }
+
+
+</script>
+<h2>Rectangle Creator 2</h2>
+<p>Count: </p>
+<textarea id="count" value="5"></textarea>
+<p></p>
+<button id="create">Create</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('count').value = 
+`hello world
+testing values
+
+alright mate
+couldn't spell there
+`
+
+
+document.getElementById('create').onclick = () => {
+  const textbox = document.getElementById('count');
+  console.log('textbox contains', textbox.value)
+
+  if (!textbox.value) {
+    alert("nothing to do here!")
+    return;
+  }
+  // convert json data into components
+  const blocks = textbox.value.split(/\n/).filter(item=>item.length);
+  console.log('your blocks', blocks) 
+
+  // const count = parseInt(textbox.value, 10);
+
+
+
+  parent.postMessage({ pluginMessage: { type: 'create-block' } }, '*')
+}
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+}
+</script>
