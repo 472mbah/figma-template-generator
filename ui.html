@@ -27,7 +27,7 @@ couldn't spell there
 
 document.getElementById('create').onclick = () => {
   const textbox = document.getElementById('count');
-  console.log('textbox contains', textbox.value)
+  // console.log('textbox contains', textbox.value)
 
   if (!textbox.value) {
     alert("nothing to do here!")
@@ -35,7 +35,7 @@ document.getElementById('create').onclick = () => {
   }
   // convert json data into components
   const blocks = textbox.value.split(/\n/).filter(item=>item.length);
-  console.log('your blocks', blocks) 
+  // console.log('your blocks', blocks) 
 
   // const count = parseInt(textbox.value, 10);
 
