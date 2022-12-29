@@ -138,6 +138,8 @@ const identifyTextDimensions = (inputInfo, textNode) => {
     inputInfo.width = textNode.width;
     inputInfo.height = textNode.height;
 
+    console.log('input data for text', inputInfo)
+
     textNode.x = contentStartX;
     textNode.y = contentStartY;
 
@@ -264,9 +266,24 @@ const alignRadius = (groups, radius=[1, 1, 1, 1], alignType='vertical') => {
 
 }
 
+const makeValuesConsistent = (object, checklist) => {
+    for (let key in checklist) {
+        let value = checklist[key];
+        let typeof_ = typeof checklist[key];
+        if (!object.hasOwnProperty.call(key)) {
+            object[key] = undefined;
+        };
+        if (object[key] === undefined || object[key] === null || typeof object[key] !== typeof_)
+            object[key] = value
+    }
+}
+
 const createBlock = (data) => {
     try {
         let nodes = [];
+        let checklist = { padding:0, strokeWeight:0 }
+        let checklistOuter = { padding:0, strokeWeight:0, gap:0 }
+        makeValuesConsistent(data, checklistOuter);
 
         data.blocks.forEach(section=>{
 
@@ -274,7 +291,7 @@ const createBlock = (data) => {
 
             let groupedNodes = [];
             let contentStartX = 100;
-            let contentStartY = 100
+            let contentStartY = 100;
             let { contents } = section;
             let { align, gap, contentAlign, matchWidth, matchHeight, dynamicBlock, cornerRadius, fills, strokes, strokeWeight, padding, tightRadius } = data;
             let zigZagRight = true;
@@ -290,8 +307,10 @@ const createBlock = (data) => {
                 cont.contentStartX = contentStartX;
                 cont.contentStartY = contentStartY;
                 
+                makeValuesConsistent(cont, checklist);
+
                 let dimensions = createEntity(cont, groupedNodes);
-    
+
                 if (align==='vertical' || align==='diagonal')
                     contentStartY = dimensions.yMax + cont.padding + cont.strokeWeight + gap
                 if (align==='horizontal' || align==='diagonal'){
@@ -378,8 +397,6 @@ const createBlock = (data) => {
     
         })
     
-    
-    
         let flatNodes = []
         flattenArray(nodes, flatNodes)
 
@@ -389,102 +406,17 @@ const createBlock = (data) => {
         console.log(e);
         return []
     }
-
-
 }
 
 figma.ui.onmessage = function (msg) {
-    // One way of distinguishing between different types of messages sent from
-    // your HTML page is to use an object with a "type" property like this.
-    // if (msg.type === 'create-rectangles') {
-    //     var nodes = [];
-    //     for (var i = 0; i < msg.count; i++) {
-    //         var rect = figma.createRectangle();
-    //         var text = figma.createText();
-
-    //         text.characters = "Hello world just testing"
-    //         console.log(text.width, text.height)
-
-    //         text.resize(50, 100);
-
-    //         rect.x = i * 150;
-    //         rect.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
-    //         figma.currentPage.appendChild(rect);
-    //         // nodes.push(rect);
-    //         // nodes.push(text);
-    //     }
-    //     figma.currentPage.selection = nodes;
-    //     figma.viewport.scrollAndZoomIntoView(nodes);
-    // }
-
 
     if (msg.type === 'create-block') {
         var nodes = [];
-
-    // textNode.setRangeFontName(5, 11, {family:'Inter', style:'Bold'});
-    // textNode.setRangeFills(5, 11, [{type:'SOLID', color: { r: 1, g: 0, b: 0 } }] );
-    // textNode.setRangeTextDecoration(5, 11, 'UNDERLINE' );
-    // textNode.setRangeLetterSpacing(5, 11, { value:2, unit:'PIXELS' })
-
-    // let textStylingObject = {
-    //     type: 'font', // font | fill | decoration | spacing,
-    //     range: [],
-    //     value: {}
-    // }
-
-
-
-        let mockData = {
-            blocks: [
-                    {
-                        contents:[                    
-                            {type:'text', 
-                                textStyling:[
-                    { type:'font', range:[0, 4], value:{family:'Inter', style:'Bold'}}, 
-                    { type:'fill', range:[6, 10], value:[{type:'SOLID', color: { r: 1, g: 0, b: 0 } }]  },
-                    { type:'decoration', range:[13, 17], value:'STRIKETHROUGH'  },
-                    { type:'spacing', range:[19, 25], value:{ value:10, unit:'PIXELS' }  }
-                ],
-                                    fontSize:18, key:undefined, value:"hello world how is it going today?", padding:0, width: 1000, strokes:[{ type: 'SOLID', color: { r: .5, g: .2, b: 0 } }], strokeWeight:0 },
-                            {type:'text', key:undefined, value:"This is a second piece of text", padding:0, width: 1000, strokes:[{ type: 'SOLID', color: { r: .1, g: .7, b: 0 } }], strokeWeight:0 },
-                            {type:'text', fontSize:18, key:undefined, value:"This is just cool!", padding:0, width: 1000, strokeWeight:0 },
-                            {type:'text', key:undefined, value:"This is the zigzag design for each element and it just works", padding:0, width: 1000, strokeWeight:0, strokes:[{ type: 'SOLID', color: { r: .5, g: .2, b: 0 } }], strokeWeight:0 },
-                        ],
-                        
-                    }
-            ],
-            align:'vertical', // or horizontal or diagonal
-                        gap: 10,
-                        padding:20,
-                        matchWidth:true,
-                        cornerRadius:10,
-                        contentAlign: 'center',
-                        tightRadius:true,
-                        strokeWeight:3,
-                        dynamicBlock:true, // only add Reectangle behind if background fill is there or strokeWeight > 0
-                        fills:[{ type: 'SOLID', color: { r: 255/255, g: 255/255, b: 255/255 } }],
-                        strokes:[{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }]
-        }
-
-        // // createEntity({value:'hello world how is it going today?', padding:20, width:100, contentStartX:100, contentStartY:100}, nodes)
-        
-        // let textNode = figma.createText();
-        // let textNode2 = figma.createText();
-        
-        // textNode.insertCharacters(0, 'hello');
-        // textNode.insertCharacters(5, ' world');
-
-
-
-        // textNode.insertCharacters(11, ' AGAIN');
-
-        // textNode2.characters = 'nice knowing you!'
-        // nodes = [textNode, textNode2]
+        figma.currentPage.selection = createBlock(msg.value, nodes);
         // figma.currentPage.selection = createBlock(mockData, nodes);;
-        // figma.viewport.scrollAndZoomIntoView(nodes);
+        // console.log('running!', figma.currentPage.selection)
+        figma.viewport.scrollAndZoomIntoView(nodes);
     }
-
-
 
     // Make sure to close the plugin when you're done. Otherwise the plugin will
     // keep running, which shows the cancel button at the bottom of the screen.

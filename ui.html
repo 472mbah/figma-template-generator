@@ -96,6 +96,12 @@
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
   }
 
+  const convertObjectIntoCollectionArr = (obj, meta={}) =>
+    Object.keys(obj).map(key=> Object.assign(
+        { type:'text', value:obj[key], key }, 
+        meta.hasOwnProperty(key) ? meta[key] : {} 
+    ))
+
   const produceKeyForm = (object, stylingOptions={}) =>
       Object.keys(object).reduce((s, key)=>{
         s[key] = {...stylingOptions}
@@ -240,33 +246,33 @@
     })
   }
 
-  // const extractInputHelper = (fields, key, index) => {
-  //   // console.log('helping', fields, key, index)
-  //   Object.keys(fields).forEach(item=>{
+  const grabValueField = (item) => {
+    Object.keys(item).forEach((it)=>{
+      let properties = item[it];
+      Object.keys(properties).forEach((prop)=>{
+        properties[prop] = properties[prop].value;
+      })
+    });
+    return item;
+  }
 
-  //     let { value, type } = fields[item];
-  //     let target = document.getElementById(`${key}::${item}::${index}`);
-  //     if (!target) return;
-  //     if (type==='number'){
+  const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions) => {
 
-  //     }
-  //     console.log(target);
+    let collections = convertObjectIntoCollectionArr(userFields, grabValueField(fieldStyling))
+    let containerStylingValue = grabValueField(containerStyling);
+    let outputData = {
+      blocks: [
+        {
+          contents:collections
+        }
+      ],
+      ...containerStylingValue.container,
+      align:'vertical'
+    }
+    console.log(outputData);
+    parent.postMessage({ pluginMessage: { type: 'create-block', value:outputData } }, '*')
 
-  //   })
-  //   console.log();
-  //   console.log();
-  // }
-
-  // const extractInputs = (data) => {
-  //   console.log('reading the following')
-  //   console.log(data)
-  //   Object.keys(data).forEach((primeKey, i)=>{
-
-  //     extractInputHelper(data[primeKey], primeKey, i);
-
-  //   })
-
-  // }
+  }
 
 </script>
 
@@ -295,6 +301,7 @@ document.getElementById('json').value =
 
 
 document.getElementById('create').onclick = () => {
+    
   const textbox = document.getElementById('json');
 
   if (!textbox.value) {
@@ -306,7 +313,6 @@ document.getElementById('create').onclick = () => {
   let keyForm = produceKeyForm(stepOneData, stylingOpts)
   let containerKeyForm = produceKeyForm({ container:null }, containerStylingOpts);
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
-  console.log(containerKeyForm);
   // document.getElementById('create').onclick = () => extractInputs(keyForm)
   document.getElementById('create').innerText = "Manage container"
   document.getElementById('create').onclick = () => {
@@ -319,6 +325,17 @@ document.getElementById('create').onclick = () => {
         document.getElementById('create').innerText = "Generate Items"
         document.getElementById('main').innerHTML = ""
         produceTemplateBlock(blockKeyForm, true);
+
+        document.getElementById('create').onclick = () => {
+
+            // document.getElementById('create').innerText = "Generate Items"
+            // document.getElementById('main').innerHTML = ""
+            unifyUserInput(stepOneData, keyForm, containerKeyForm, blockKeyForm);
+
+        }
+          
+        // unifyUserInput
+
     }
   
   }
@@ -327,8 +344,8 @@ document.getElementById('create').onclick = () => {
   produceTemplateBlock(keyForm);
 
 
-  // parent.postMessage({ pluginMessage: { type: 'create-block' } }, '*')
 }
+
 document.getElementById('cancel').onclick = () => {
   parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
 }
