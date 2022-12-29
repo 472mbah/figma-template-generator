@@ -1,3 +1,6 @@
+// "build": "tsc -p tsconfig.json",
+// "watch": "npm run build -- --watch"
+
 
 figma.showUI(__html__, {width: 300, height: 600});
 

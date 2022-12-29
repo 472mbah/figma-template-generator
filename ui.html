@@ -1,49 +1,336 @@
+<style>
+
+  body {
+    --max-width-text-area: calc(300px - 2em);
+    --max-height-text-area: calc(300px - 2em);
+  }
+
+  textarea {
+    width: var(--max-width-text-area);
+    max-width: var(--max-width-text-area);
+    min-width: var(--max-width-text-area);
+    height: var(--max-height-text-area);
+    max-height: var(--max-height-text-area);
+    min-height: var(--max-height-text-area);
+    padding: 1em;
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .space-between {
+    justify-content: space-between;
+  } 
+  
+  .center-align {
+    align-items: center;
+  } 
+
+  .col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gap1 {
+    gap: 1em;
+  }
+
+  .gap_5 {
+    gap: .5em;
+  }
+
+  .stickTop {
+    position: sticky;
+    width: 100%;
+    background: #fff;
+    top: 0;
+    border-bottom: 1px solid #000;
+  }
+
+  .stickTop button {
+    height: fit-content;
+    width: fit-content;
+  }
+
+  form {
+    padding-top: 1em;
+  }
+
+</style>
+
+
 <script>
-  // if (figma.editorType === 'figjam') {
-  //   return;
-  // }
-  // for (const node of figma.currentPage.selection) {
-  //   console.log(node);
+
+  let stylingOpts = {
+    padding: {value:0, type:'number', min:0},
+    width: {value:200, type:'number', min:0},
+    strokes: {value:[], type:'figma-colour'},
+    strokeWeight:{value:0, type:'number', min:0, max:3},
+    fills: {value:[], type:'figma-colour'},
+    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
+  }
+
+  let containerStylingOpts = {
+    padding: {value:0, type:'number', min:0},
+    width: {value:200, type:'number', min:0},
+    strokes: {value:[], type:'figma-colour'},
+    strokeWeight:{value:0, type:'number', min:0, max:3},
+    fills: {value:[], type:'figma-colour'},
+    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
+  }
+
+  let blockStylingOpts = {
+    gap:{value:10, type:'number', defaultVisibility:'flex' },
+    produceOne: {value:false, type:'boolean', hideItem:'*', hideOn:true, defaultVisibility:'flex' },
+    quantity: { value:1, type:'number', min:1, defaultVisibility:'flex' },
+    randomValues: { value:true, type:'boolean', defaultVisibility:'flex' },
+    displayAsGrid: { value:false, type:'boolean', hideItem:['gridTemplateColumns', 'gridTemplateRows'], hideOn:false, defaultVisibility:'flex' },
+    gridTemplateColumns: { value:1, type:'number', defaultVisibility:'none' },
+    gridTemplateRows: { value:1, type:'number', defaultVisibility:'none' },
+    displayAsFlex: { value:true, type:'boolean', hideItem:['flexRow', 'flexColumn'], hideOn:false, defaultVisibility:'flex' },
+    flexRow: { value:false, type:'boolean' },
+    flexColumn: { value:true, type:'boolean', defaultVisibility:'flex' },
+    matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
+    matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
+  }
+
+  const produceKeyForm = (object, stylingOptions={}) =>
+      Object.keys(object).reduce((s, key)=>{
+        s[key] = {...stylingOptions}
+        return s;
+      }, {})
+
+  const convertHexToFigmaRGB = (hex) => {
+    // https://stackoverflow.com/questions/58184508/html5-input-type-color-read-single-rgb-values
+    const r = parseInt(hex.substr(1,2), 16)
+    const g = parseInt(hex.substr(3,2), 16)
+    const b = parseInt(hex.substr(5,2), 16)
+    return [{type:'SOLID', color:{ r:r/255, g:g/255, b:b/255 }}]
+  }
+  
+  const produceInputFields = (fields, form, parentField, manageClassData=false) => {
+    const root = document.documentElement;
+    Object.keys(fields).forEach(key=>{
+      let { value, type, max, min, hideItem, hideOn, defaultVisibility } = fields[key];
+      let container = document.createElement('div');
+      container.className = 'row gap1 space-between'
+      let label = document.createElement('label')
+      label.innerText = key;
+      container.appendChild(label);
+
+      if (manageClassData) {
+        let viewProperty = `--figma-design-generator-var-${key}`
+        root.style.setProperty(viewProperty, defaultVisibility !== undefined ? defaultVisibility : 'flex');
+        container.style.display = `var(${viewProperty})`
+      }
+
+      if (type==='number') {
+        let inputField = document.createElement('input');
+        inputField.type = 'number';
+        inputField.value = value;
+        if (max!==undefined) inputField.max = max;
+        if (min!==undefined) inputField.min = min;
+        inputField.onchange = (e)=>{
+            fields[key].value = parseInt(e.target.value);
+        };
+        container.appendChild(inputField);
+      }else if (type==='figma-colour') {
+
+        let inputField = document.createElement('input');
+        inputField.type = 'color';
+        inputField.value = value;
+
+        inputField.onchange = (e)=>{
+          fields[key].value = convertHexToFigmaRGB(e.target.value);
+        };
+
+        container.appendChild(inputField);
+      
+      }
+      else if (type==='boolean') {
+        let selectBlock = document.createElement('select');
+        let trueOpt = document.createElement('option');
+        let falseOpt = document.createElement('option');
+        trueOpt.innerText = "Yes";
+        falseOpt.innerText = "No";
+        selectBlock.appendChild(trueOpt);
+        selectBlock.appendChild(falseOpt);
+        selectBlock.value = fields[key].value ? 'Yes' : 'No';
+        selectBlock.onchange = (e)=>{
+            fields[key].value = e.target.value === 'Yes' ? true : false;
+            // hideItem, hideOn
+            if (manageClassData && hideItem!==undefined) {
+                let fieldsFound = [];
+                let valueToSet = fields[key].value===hideOn ? 'none' : 'flex';
+                fieldsFound = hideItem==='*' ? Object.keys(fields).filter(key_=>key_!==key) : hideItem;
+                fieldsFound.forEach(f=>{
+                  root.style.setProperty(`--figma-design-generator-var-${f}`, valueToSet);
+                })
+            }
+        };
+        container.appendChild(selectBlock);
+      }
+      else if (/^number-option-(\d+)$/.test(type)) {
+
+        let miniParent = document.createElement('div');
+        miniParent.className = 'row'
+        for (let k = 0; k < value.length; k++) {
+          let inputField = document.createElement('input');
+          inputField.type = 'number';
+          inputField.value = value[k];
+          inputField.onchange = (e)=>{
+            fields[key].value[k] = parseInt(e.target.value);
+          };
+          inputField.style.width = '40px'
+          if (min!==undefined) {
+            inputField.min = min;
+          }
+          if (max!==undefined) {
+            inputField.min = min;
+          }          
+          miniParent.appendChild(inputField);
+        }
+
+        container.appendChild(miniParent);
+
+      }
+
+      form.appendChild(container)
+    })
+  }
+
+  const produceTemplateBlock = (styleForm, manageClassData=false) => {
+
+    Object.keys(styleForm).forEach((item, i)=>{
+
+      let parent = document.createElement('div');
+      parent.style.position = 'relative';
+      let header = document.createElement('h3');
+
+      let miniNav = document.createElement('div');
+      miniNav.className = 'row'
+      miniNav.appendChild(header);
+      miniNav.className = 'stickTop row gap1 center-align'
+
+      header.innerHTML = item;
+      header.style.width = '100%';
+      parent.appendChild(miniNav);
+
+      let form = document.createElement('form');
+      form.className = 'dynamic-form col gap_5'
+
+      let toggleButton = document.createElement('button');
+      toggleButton.innerText = "Hide"
+      toggleButton.onclick = () => {
+        form.style.display = !form.style.display.length || form.style.display === 'flex' ? 'none' : 'flex'
+      }
+
+      miniNav.appendChild(toggleButton);
+
+
+      parent.appendChild(form);
+
+      produceInputFields(styleForm[item], form, item, manageClassData);
+
+      document.getElementById('main').append(parent);
+
+
+    })
+  }
+
+  // const extractInputHelper = (fields, key, index) => {
+  //   // console.log('helping', fields, key, index)
+  //   Object.keys(fields).forEach(item=>{
+
+  //     let { value, type } = fields[item];
+  //     let target = document.getElementById(`${key}::${item}::${index}`);
+  //     if (!target) return;
+  //     if (type==='number'){
+
+  //     }
+  //     console.log(target);
+
+  //   })
+  //   console.log();
+  //   console.log();
   // }
 
+  // const extractInputs = (data) => {
+  //   console.log('reading the following')
+  //   console.log(data)
+  //   Object.keys(data).forEach((primeKey, i)=>{
+
+  //     extractInputHelper(data[primeKey], primeKey, i);
+
+  //   })
+
+  // }
 
 </script>
-<h2>Rectangle Creator 2</h2>
-<p>Count: </p>
-<textarea id="count" value="5"></textarea>
-<p></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
+
+<div class="stickTop row gap1">
+  <button id="create">Create</button>
+  <button id="cancel">Cancel</button>
+</div>
+
+<div id="main">
+  <h2>Enter JSON template below</h2>
+  <textarea id="json" value="5"></textarea>
+  <p></p>
+</div>
+
+
+
 <script>
 
-document.getElementById('count').value = 
-`hello world
-testing values
-
-alright mate
-couldn't spell there
+document.getElementById('json').value = 
+`{
+  "name":"Momodou",
+  "age":"3232",
+  "message": "Hello world, how is it going?"
+}
 `
 
 
 document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  // console.log('textbox contains', textbox.value)
+  const textbox = document.getElementById('json');
 
   if (!textbox.value) {
     alert("nothing to do here!")
     return;
   }
-  // convert json data into components
-  const blocks = textbox.value.split(/\n/).filter(item=>item.length);
-  // console.log('your blocks', blocks) 
 
-  // const count = parseInt(textbox.value, 10);
+  let stepOneData = JSON.parse(textbox.value);
+  let keyForm = produceKeyForm(stepOneData, stylingOpts)
+  let containerKeyForm = produceKeyForm({ container:null }, containerStylingOpts);
+  let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
+  console.log(containerKeyForm);
+  // document.getElementById('create').onclick = () => extractInputs(keyForm)
+  document.getElementById('create').innerText = "Manage container"
+  document.getElementById('create').onclick = () => {
+
+    document.getElementById('main').innerHTML = ""
+    produceTemplateBlock(containerKeyForm);
+    document.getElementById('create').innerText = "Manage Blocks"
+
+    document.getElementById('create').onclick = () => {
+        document.getElementById('create').innerText = "Generate Items"
+        document.getElementById('main').innerHTML = ""
+        produceTemplateBlock(blockKeyForm, true);
+    }
+  
+  }
+
+  document.getElementById('main').innerHTML = ""
+  produceTemplateBlock(keyForm);
 
 
-
-  parent.postMessage({ pluginMessage: { type: 'create-block' } }, '*')
+  // parent.postMessage({ pluginMessage: { type: 'create-block' } }, '*')
 }
 document.getElementById('cancel').onclick = () => {
   parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
 }
 </script>
+
