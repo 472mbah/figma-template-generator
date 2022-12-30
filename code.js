@@ -29,6 +29,14 @@ const findContentDimensions = (tempStore) => {
 
     for (let k = 1; k < tempStore.length; k++) {
         let item = tempStore[k];
+        // if (item.name==='Rectangle'){
+        //     const line = figma.createLine()
+        //     // Move to (50, 50)
+        //     line.x = item.x
+        //     line.y = item.y
+        //     // Make line 200px long
+        //     line.resize(200, 0)            
+        // }
         let itemXMin = item.x;
         let itemYMin = item.y;
         let itemXMax = item.width + itemXMin;
@@ -80,7 +88,7 @@ const alignItems = (group, alignType='vertical', data=[]) => {
 
 const identifyTextDimensions = (inputInfo, textNode) => {
 
-    let { value, width, height, contentStartX, contentStartY, fontSize, textStyling } = inputInfo;
+    let { value, width, height, contentStartX, contentStartY, fontSize, textStyling, padding,  strokeWidth } = inputInfo;
     if (fontSize!=undefined && fontSize > 0){
         textNode.fontSize = fontSize;
     }
@@ -138,10 +146,10 @@ const identifyTextDimensions = (inputInfo, textNode) => {
     inputInfo.width = textNode.width;
     inputInfo.height = textNode.height;
 
-    console.log('input data for text', inputInfo)
+    let shift = ((padding||0) + (strokeWidth||0));
 
-    textNode.x = contentStartX;
-    textNode.y = contentStartY;
+    textNode.x = contentStartX + shift;
+    textNode.y = contentStartY + shift;
 
 }
 
@@ -179,8 +187,8 @@ const identifyBoxDimensions = (inputInfo, containerNode) => {
     containerNode.bottomLeftRadius = cornerRadius[3]
     containerNode.resize(width + doublePadding, height + doublePadding);
 
-    containerNode.x = contentStartX - padding;
-    containerNode.y = contentStartY - padding;
+    containerNode.x = contentStartX;
+    containerNode.y = contentStartY;
 
 }
 
@@ -240,7 +248,6 @@ const alignRadius = (groups, radius=[1, 1, 1, 1], alignType='vertical') => {
     if (firstMainRect.length) {
         firstMainRect = firstMainRect[0];
         if (alignType==='vertical') {
-            console.log('first', firstMainRect);
             firstMainRect.topLeftRadius = radius[0];
             firstMainRect.topRightRadius = radius[1];    
         }else if (alignType==='horizontal') {
@@ -255,7 +262,6 @@ const alignRadius = (groups, radius=[1, 1, 1, 1], alignType='vertical') => {
         // alert('got second one');
         secondMainRect = secondMainRect[0];
         if (alignType==='vertical') {
-            console.log('second', secondMainRect);
             secondMainRect.bottomRightRadius = radius[2];
             secondMainRect.bottomLeftRadius = radius[3];    
         }else if (alignType==='horizontal') {
@@ -270,7 +276,7 @@ const makeValuesConsistent = (object, checklist) => {
     for (let key in checklist) {
         let value = checklist[key];
         let typeof_ = typeof checklist[key];
-        if (!object.hasOwnProperty.call(key)) {
+        if (!object.hasOwnProperty(key)) {
             object[key] = undefined;
         };
         if (object[key] === undefined || object[key] === null || typeof object[key] !== typeof_)
@@ -312,9 +318,9 @@ const createBlock = (data) => {
                 let dimensions = createEntity(cont, groupedNodes);
 
                 if (align==='vertical' || align==='diagonal')
-                    contentStartY = dimensions.yMax + cont.padding + cont.strokeWeight + gap
+                    contentStartY = dimensions.yMax + gap
                 if (align==='horizontal' || align==='diagonal'){
-                    contentStartX = dimensions.xMax + cont.padding  + gap
+                    contentStartX = dimensions.xMax + gap
                 }
                 if (align==='zigzag') {
                     contentStartY = dimensions.yMax + (cont.padding) - cont.strokeWeight
@@ -363,6 +369,7 @@ const createBlock = (data) => {
                 Array.isArray(strokes) ||
                 Array.isArray(fills)
 
+                
             if (needBlock) {
                 // if (align==='vertical' || align==='horizontal') {
                 let flat = []
@@ -389,9 +396,6 @@ const createBlock = (data) => {
             if (!needExtraRectangle) {
                 primeRect.remove();
             }
-
-            console.log('grouped', groupedNodes)
-
     
             nodes.push(groupedNodes)
     
@@ -414,7 +418,6 @@ figma.ui.onmessage = function (msg) {
         var nodes = [];
         figma.currentPage.selection = createBlock(msg.value, nodes);
         // figma.currentPage.selection = createBlock(mockData, nodes);;
-        // console.log('running!', figma.currentPage.selection)
         figma.viewport.scrollAndZoomIntoView(nodes);
     }
 

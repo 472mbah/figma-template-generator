@@ -65,7 +65,8 @@
 
   let stylingOpts = {
     padding: {value:0, type:'number', min:0},
-    width: {value:200, type:'number', min:0},
+    width: {value:-1, type:'number', min:-1},
+    height: {value:-1, type:'number', min:-1},
     strokes: {value:[], type:'figma-colour'},
     strokeWeight:{value:0, type:'number', min:0, max:3},
     fills: {value:[], type:'figma-colour'},
@@ -96,17 +97,26 @@
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
   }
 
+
+
   const convertObjectIntoCollectionArr = (obj, meta={}) =>
     Object.keys(obj).map(key=> Object.assign(
         { type:'text', value:obj[key], key }, 
         meta.hasOwnProperty(key) ? meta[key] : {} 
     ))
 
-  const produceKeyForm = (object, stylingOptions={}) =>
-      Object.keys(object).reduce((s, key)=>{
-        s[key] = {...stylingOptions}
-        return s;
-      }, {})
+  
+
+  const produceKeyForm = (object, stylingOptions) => {
+    let duplicateObj = {  };
+    for (let k in object) {
+      duplicateObj[k] = JSON.parse(JSON.stringify(stylingOptions));
+    }
+    return duplicateObj
+  }
+
+
+
 
   const convertHexToFigmaRGB = (hex) => {
     // https://stackoverflow.com/questions/58184508/html5-input-type-color-read-single-rgb-values
@@ -238,6 +248,8 @@
 
       parent.appendChild(form);
 
+      // styleForm[item] = { ...styleForm[item] }
+
       produceInputFields(styleForm[item], form, item, manageClassData);
 
       document.getElementById('main').append(parent);
@@ -258,8 +270,13 @@
 
   const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions) => {
 
+    console.log('field styling', userFields)
+
     let collections = convertObjectIntoCollectionArr(userFields, grabValueField(fieldStyling))
     let containerStylingValue = grabValueField(containerStyling);
+
+
+
     let outputData = {
       blocks: [
         {
@@ -310,6 +327,7 @@ document.getElementById('create').onclick = () => {
   }
 
   let stepOneData = JSON.parse(textbox.value);
+  console.log('user fields', stepOneData)
   let keyForm = produceKeyForm(stepOneData, stylingOpts)
   let containerKeyForm = produceKeyForm({ container:null }, containerStylingOpts);
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
