@@ -88,7 +88,8 @@ const alignItems = (group, alignType='vertical', data=[]) => {
 
 const identifyTextDimensions = (inputInfo, textNode) => {
 
-    let { value, width, height, contentStartX, contentStartY, fontSize, textStyling, padding,  strokeWidth } = inputInfo;
+
+    let { value, width, height, contentStartX, contentStartY, fontSize, textStyling, padding, strokeWeight } = inputInfo;
     if (fontSize!=undefined && fontSize > 0){
         textNode.fontSize = fontSize;
     }
@@ -134,19 +135,24 @@ const identifyTextDimensions = (inputInfo, textNode) => {
     //     range: [],
     //     value: {}
     // }
-
-    if (width===undefined || width <= 0)
+    // ()
+    // (strokeWeight||0)
+    if (width===undefined || width <= 0){
         inputInfo.width = textNode.width;
+    }
 
     if (height===undefined || height <= 0)
         inputInfo.height = textNode.height;
+
+
 
     textNode.resize(inputInfo.width, inputInfo.height)
 
     inputInfo.width = textNode.width;
     inputInfo.height = textNode.height;
 
-    let shift = ((padding||0) + (strokeWidth||0));
+
+    let shift = ((padding||0));
 
     textNode.x = contentStartX + shift;
     textNode.y = contentStartY + shift;
@@ -168,8 +174,8 @@ const identifyBoxDimensions = (inputInfo, containerNode) => {
     else if (!Array.isArray(cornerRadius)) {
         cornerRadius = [cornerRadius, cornerRadius, cornerRadius, cornerRadius]
     }
-
-    let doublePadding = (padding + strokeWeight) * 2;
+    // strokeWeight
+    let doublePadding = (padding) * 2;
     
     if (Array.isArray(fills)) {
         containerNode.fills = fills;
@@ -284,11 +290,23 @@ const makeValuesConsistent = (object, checklist) => {
     }
 }
 
+const shiftValue = (item, value=0, axis='x') => {
+    if (Array.isArray(item)) {
+        for (let j = 0; j < item.length; j++) {
+            shiftValue(item[j], value, axis);
+        }
+    }
+    else {
+        item[axis] += value;
+    }
+}
+
 const createBlock = (data) => {
     try {
         let nodes = [];
         let checklist = { padding:0, strokeWeight:0 }
         let checklistOuter = { padding:0, strokeWeight:0, gap:0 }
+
         makeValuesConsistent(data, checklistOuter);
 
         data.blocks.forEach(section=>{
@@ -307,15 +325,23 @@ const createBlock = (data) => {
                 cornerRadius = [cornerRadius, cornerRadius, cornerRadius, cornerRadius]
             }
 
-            let previousComponentWidth = undefined; 
-    
+            let inZigZagModeShiftLeft = false;
+            let inZigZagModePreviousXMax = undefined;
+
+
             contents.forEach(cont=> {
                 cont.contentStartX = contentStartX;
                 cont.contentStartY = contentStartY;
                 
                 makeValuesConsistent(cont, checklist);
-
+                console.log('sending', cont)
                 let dimensions = createEntity(cont, groupedNodes);
+
+                if (inZigZagModeShiftLeft) {
+                    shiftValue(groupedNodes[groupedNodes.length - 1], -(dimensions.xMax - dimensions.xMin), 'x');
+                    inZigZagModeShiftLeft = false;
+                    inZigZagModePreviousXMax = dimensions.xMax - (dimensions.xMax - dimensions.xMin)
+                }
 
                 if (align==='vertical' || align==='diagonal')
                     contentStartY = dimensions.yMax + gap
@@ -323,21 +349,22 @@ const createBlock = (data) => {
                     contentStartX = dimensions.xMax + gap
                 }
                 if (align==='zigzag') {
-                    contentStartY = dimensions.yMax + (cont.padding) - cont.strokeWeight
-                    // + cont.padding - cont.strokeWeight
-                    if (zigZagRight)
-                        contentStartX = dimensions.xMax + cont.padding
-                        // + cont.padding
-                    else {
-                        let useWidth = previousComponentWidth === undefined ? ( dimensions.xMax - dimensions.xMin ) : previousComponentWidth
-                        contentStartX = dimensions.xMin - useWidth 
-                        // + cont.padding
+                    contentStartY = dimensions.yMax + gap
+                    if (zigZagRight){
+                        contentStartX = inZigZagModePreviousXMax!==undefined ? inZigZagModePreviousXMax : dimensions.xMax
+                        inZigZagModeShiftLeft = false;
+                        // const line = figma.createRectangle()
+                        // line.x = dimensions.xMax
+                        // line.y = dimensions.yMax
+                        // line.resize(20, 30)                        
                     }
-                    previousComponentWidth = ( dimensions.xMax - dimensions.xMin ) - (cont.padding) - (cont.strokeWeight)
-                    // + cont.padding
+                    else {
+                        contentStartX = dimensions.xMin
+                        inZigZagModeShiftLeft = true;
+
+                    }
                     zigZagRight = !zigZagRight
                 }
-
 
                 if (dynamicBlock && !((cont.strokeWeight!==undefined && cont.strokeWeight > 0) || Array.isArray(cont.backgroundColours) && cont.backgroundColours.length) ) {
                     groupedNodes[groupedNodes.length-1] =

@@ -64,22 +64,24 @@
 <script>
 
   let stylingOpts = {
-    padding: {value:0, type:'number', min:0},
-    width: {value:-1, type:'number', min:-1},
+    padding: {value:10, type:'number', min:0},
+    width: {value:100, type:'number', min:-1},
     height: {value:-1, type:'number', min:-1},
-    strokes: {value:[], type:'figma-colour'},
-    strokeWeight:{value:0, type:'number', min:0, max:3},
-    fills: {value:[], type:'figma-colour'},
-    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
+    strokes: {value:[{ type: 'SOLID', color: { r: 0, g: 1, b: 0 } }], type:'figma-colour'},
+    strokeWeight:{value:0, type:'number', min:0},
+    fills: {value:[{ type: 'SOLID', color: { r: 0, g: 1, b: 0.5 } }], type:'figma-colour'},
+    cornerRadius: {value:[10, 10, 10, 10], type:'number-option-4', min:0 },
   }
 
   let containerStylingOpts = {
     padding: {value:0, type:'number', min:0},
-    width: {value:200, type:'number', min:0},
+    gap: {value:0, type:'number', min:0},
+    width: {value:-1, type:'number', min:-1},
     strokes: {value:[], type:'figma-colour'},
     strokeWeight:{value:0, type:'number', min:0, max:3},
     fills: {value:[], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
+    align: {value:'vertical', type:'select-options', options:['vertical', 'horizontal', 'zigzag', 'diagonal']},
   }
 
   let blockStylingOpts = {
@@ -284,7 +286,6 @@
         }
       ],
       ...containerStylingValue.container,
-      align:'vertical'
     }
     console.log(outputData);
     parent.postMessage({ pluginMessage: { type: 'create-block', value:outputData } }, '*')
@@ -310,11 +311,17 @@
 
 document.getElementById('json').value = 
 `{
-  "name":"Momodou",
+  "name":"My name is Momodou!",
   "age":"3232",
-  "message": "Hello world, how is it going?"
+  "message": "Hello world, how is it going?",
+  "another": "Hello world, how is it going?",
+  "another2": "Hello world, how is it going?",
+  "another3": "short",
+  "another3": "lorem ipsum something garbage and yes thats all good!"
 }
 `
+
+
 
 
 document.getElementById('create').onclick = () => {
