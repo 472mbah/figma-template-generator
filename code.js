@@ -307,6 +307,9 @@ const createBlock = (data) => {
         let checklist = { padding:0, strokeWeight:0 }
         let checklistOuter = { padding:0, strokeWeight:0, gap:0 }
 
+        let contentStartX = data.startFromX || 400;
+        let contentStartY = data.startFromY || 400;
+
         makeValuesConsistent(data, checklistOuter);
 
         data.blocks.forEach(section=>{
@@ -314,12 +317,9 @@ const createBlock = (data) => {
             let primeRect = figma.createRectangle();
 
             let groupedNodes = [];
-            let contentStartX = 100;
-            let contentStartY = 100;
             let { contents } = section;
             let { align, gap, contentAlign, matchWidth, matchHeight, dynamicBlock, cornerRadius, fills, strokes, strokeWeight, padding, tightRadius } = data;
             let zigZagRight = true;
-            // contentAlign
 
             if (!Array.isArray(cornerRadius)) {
                 cornerRadius = [cornerRadius, cornerRadius, cornerRadius, cornerRadius]
@@ -334,7 +334,6 @@ const createBlock = (data) => {
                 cont.contentStartY = contentStartY;
                 
                 makeValuesConsistent(cont, checklist);
-                console.log('sending', cont)
                 let dimensions = createEntity(cont, groupedNodes);
 
                 if (inZigZagModeShiftLeft) {
@@ -393,8 +392,8 @@ const createBlock = (data) => {
                 padding!==undefined && padding > 0 ||
                 cornerRadius!==undefined && cornerRadius > 0 ||
                 strokeWeight!==undefined && strokeWeight > 0 ||
-                Array.isArray(strokes) ||
-                Array.isArray(fills)
+                (Array.isArray(strokes) && strokes.length) ||
+                (Array.isArray(fills) && fills.length)
 
                 
             if (needBlock) {
@@ -422,8 +421,17 @@ const createBlock = (data) => {
 
             if (!needExtraRectangle) {
                 primeRect.remove();
+            }else {
+                groupedNodes.push(primeRect);
             }
-    
+
+            let flattenedBlock = [];
+            flattenArray(groupedNodes, flattenedBlock)
+            let blockDimensions = findContentDimensions(flattenedBlock);
+            
+            contentStartX = blockDimensions.xMax + 50;
+            contentStartY = 100;
+
             nodes.push(groupedNodes)
     
         })

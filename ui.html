@@ -65,17 +65,17 @@
 
   let stylingOpts = {
     padding: {value:10, type:'number', min:0},
-    width: {value:100, type:'number', min:-1},
+    width: {value:-1, type:'number', min:-1},
     height: {value:-1, type:'number', min:-1},
     strokes: {value:[{ type: 'SOLID', color: { r: 0, g: 1, b: 0 } }], type:'figma-colour'},
     strokeWeight:{value:0, type:'number', min:0},
-    fills: {value:[{ type: 'SOLID', color: { r: 0, g: 1, b: 0.5 } }], type:'figma-colour'},
-    cornerRadius: {value:[10, 10, 10, 10], type:'number-option-4', min:0 },
+    fills: {value:[{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }], type:'figma-colour'},
+    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
   }
 
   let containerStylingOpts = {
     padding: {value:0, type:'number', min:0},
-    gap: {value:0, type:'number', min:0},
+    gap: {value:10, type:'number', min:0},
     width: {value:-1, type:'number', min:-1},
     strokes: {value:[], type:'figma-colour'},
     strokeWeight:{value:0, type:'number', min:0, max:3},
@@ -97,6 +97,8 @@
     flexColumn: { value:true, type:'boolean', defaultVisibility:'flex' },
     matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
+    startFromX: { value:100, type:'number', defaultVisibility:'flex' },
+    startFromY: { value:100, type:'number', defaultVisibility:'flex' },
   }
 
 
@@ -261,33 +263,32 @@
   }
 
   const grabValueField = (item) => {
-    Object.keys(item).forEach((it)=>{
-      let properties = item[it];
+    let newItem = JSON.parse(JSON.stringify(item))
+    Object.keys(newItem).forEach((it)=>{
+      let properties = newItem[it];
       Object.keys(properties).forEach((prop)=>{
         properties[prop] = properties[prop].value;
       })
     });
-    return item;
+    return newItem;
   }
 
-  const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions) => {
+  const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions, allBlocks) => {
 
-    console.log('field styling', userFields)
+    if (!Array.isArray(userFields)) {
+      userFields = [userFields];
+    } 
 
-    let collections = convertObjectIntoCollectionArr(userFields, grabValueField(fieldStyling))
     let containerStylingValue = grabValueField(containerStyling);
-
-
+    let blocks = userFields.map(fields=>
+      ({contents: convertObjectIntoCollectionArr(fields, grabValueField({...fieldStyling}))})
+    )
 
     let outputData = {
-      blocks: [
-        {
-          contents:collections
-        }
-      ],
+      blocks,
       ...containerStylingValue.container,
     }
-    console.log(outputData);
+
     parent.postMessage({ pluginMessage: { type: 'create-block', value:outputData } }, '*')
 
   }
@@ -310,7 +311,9 @@
 <script>
 
 document.getElementById('json').value = 
-`{
+`[
+  
+{
   "name":"My name is Momodou!",
   "age":"3232",
   "message": "Hello world, how is it going?",
@@ -318,7 +321,20 @@ document.getElementById('json').value =
   "another2": "Hello world, how is it going?",
   "another3": "short",
   "another3": "lorem ipsum something garbage and yes thats all good!"
+},
+
+{
+  "name":"My name is John!",
+  "age":"3232",
+  "message": "Hello world, how is it going?",
+  "another": "Hello world, how is it going?",
+  "another2": "Hello world, how is it going?",
+  "another3": "short",
+  "another3": "lorem ipsum something garbage and yes thats all good!"
 }
+
+
+]
 `
 
 
@@ -334,7 +350,11 @@ document.getElementById('create').onclick = () => {
   }
 
   let stepOneData = JSON.parse(textbox.value);
-  console.log('user fields', stepOneData)
+  let allComponents = Array.isArray(stepOneData) ? [...stepOneData] : [{...stepOneData}];
+  if (Array.isArray(stepOneData)) {
+    stepOneData = stepOneData[0];
+  }
+
   let keyForm = produceKeyForm(stepOneData, stylingOpts)
   let containerKeyForm = produceKeyForm({ container:null }, containerStylingOpts);
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
@@ -355,7 +375,7 @@ document.getElementById('create').onclick = () => {
 
             // document.getElementById('create').innerText = "Generate Items"
             // document.getElementById('main').innerHTML = ""
-            unifyUserInput(stepOneData, keyForm, containerKeyForm, blockKeyForm);
+            unifyUserInput(allComponents, keyForm, containerKeyForm, blockKeyForm);
 
         }
           
