@@ -3,6 +3,7 @@ figma.showUI(__html__, {width: 300, height: 600});
 
 figma.loadFontAsync({ family: "Inter", style: "Regular" })
 figma.loadFontAsync({ family: "Roboto", style: "Regular" })
+figma.loadFontAsync({ family: "Roboto", style: "Bold" })
 figma.loadFontAsync({ family: "Inter", style: "Bold" })
 
 const flattenArray = (nodes, store=[]) => {
@@ -182,10 +183,10 @@ const identifyBoxDimensions = (inputInfo, containerNode) => {
         // [{ type: 'SOLID', color: { r: 255/255, g: 255/255, b: 255/255 } }]
     }
 
-
     if (Array.isArray(strokes)) {
         containerNode.strokes = strokes;
     }
+    
     containerNode.strokeWeight = strokeWeight;
     containerNode.topLeftRadius = cornerRadius[0]
     containerNode.topRightRadius = cornerRadius[1]
@@ -307,8 +308,8 @@ const createBlock = (data) => {
         let checklist = { padding:0, strokeWeight:0 }
         let checklistOuter = { padding:0, strokeWeight:0, gap:0 }
 
-        let contentStartX = data.startFromX || 400;
-        let contentStartY = data.startFromY || 400;
+        let contentStartX = data.startFromX || 100;
+        let contentStartY = data.startFromY || 100;
 
         makeValuesConsistent(data, checklistOuter);
 
@@ -406,8 +407,8 @@ const createBlock = (data) => {
                     identifyBoxDimensions({ 
                         width: primeDimensions.xMax - primeDimensions.xMin - 2,
                         height: primeDimensions.yMax - primeDimensions.yMin - 2,
-                        contentStartX:primeDimensions.xMin, 
-                        contentStartY: primeDimensions.yMin,
+                        contentStartX:primeDimensions.xMin - padding, 
+                        contentStartY: primeDimensions.yMin - padding,
                         padding,
                         strokes, 
                         fills,
