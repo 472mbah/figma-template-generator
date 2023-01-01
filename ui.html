@@ -154,7 +154,8 @@
     fontSize: {value:12, type:'number', min:1 },
     roundDecimals: {value:3, type:'number', min:0 },
     unit: {value:" Degrees", type:'string' },
-    dataType: {value:'date', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
+    dataType: {value:'string', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
+    randomStringLength: {value:30, type:'number', min:1 },
     dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
     language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
     booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
@@ -224,7 +225,7 @@
   const produceInputFields = (fields, form, parentField, manageClassData=false) => {
     const root = document.documentElement;
     Object.keys(fields).forEach(key=>{
-      let { value, type, max, min, hideItem, hideOn, defaultVisibility } = fields[key];
+      let { value, type, max, min, hideItem, hideOn, defaultVisibility, options } = fields[key];
       let container = document.createElement('div');
       container.className = 'row gap1 space-between'
       let label = document.createElement('label')
@@ -283,6 +284,24 @@
         };
         container.appendChild(selectBlock);
       }
+      else if (type==='select-options') {
+        // options:['vertical', 'horizontal', 'zigzag', 'diagonal']
+        let selectBlock = document.createElement('select');
+        options.forEach((opt, i)=>{
+          let el = document.createElement('option');
+          el.innerText = opt;
+          el.value = i;
+          selectBlock.appendChild(el);
+        })
+
+        selectBlock.onchange = (e)=>{
+            let index = parseInt(e.target.value);
+            if (!Number.isInteger(index) || index < 0 || index >= options.length) return;
+            fields[key].value = options[index];      
+        }
+        container.appendChild(selectBlock);
+
+      }
       else if (/^number-option-(\d+)$/.test(type)) {
 
         let miniParent = document.createElement('div');
@@ -307,6 +326,8 @@
         container.appendChild(miniParent);
 
       }
+
+
 
       form.appendChild(container)
     })
@@ -397,7 +418,7 @@
 
             // 'string', 'integer', 'decimal', 'date', 'boolean'              
             if (dataType==='string') {
-                newVersion[field] = createRandomString(value.length*Math.floor(value.length+(Math.random()*1.5)));
+                newVersion[field] = createRandomString(fieldStyling[field].randomStringLength);
             }else if (dataType==='date') {
                 newVersion[field] = createRandomDate(fieldStyling[field].dateFormat, fieldStyling[field].language)
             }else if (dataType==='boolean') {
