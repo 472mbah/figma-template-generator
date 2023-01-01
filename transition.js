@@ -107,3 +107,10 @@ const createRandomBoolean = (format='yes/no') => {
 // console.log(createRandomBoolean());
 
 
+const convertFieldToText = (field) => {
+    let strs = field.split(/[A-Z]/);
+    console.log(strs)
+
+}
+
+convertFieldToText('goodMorning')

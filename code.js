@@ -96,7 +96,6 @@ const identifyTextDimensions = (inputInfo, textNode) => {
     }
 
     if (Array.isArray(textStyling)) {
-
         textStyling.forEach(style=>{
 
             let range = style.range;

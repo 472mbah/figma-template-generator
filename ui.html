@@ -148,6 +148,8 @@
     strokes: {value:[], type:'figma-colour'},
     strokeWeight:{value:1, type:'number', min:0},
     fills: {value:[], type:'figma-colour'},
+    fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
+    addFields: {value:true, type:'boolean', defaultVisibility:'flex' },
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
     roundDecimals: {value:3, type:'number', min:0 },
@@ -157,8 +159,9 @@
     language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
     booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
     minRandomValue:{value:0, type:'number'},
-    maxRandomValue:{value:100, type:'number'}
-    // textStyling: {value:[{type:'font', value:{ family: "Roboto", style: "Regular" }}], type:'font', min:1 },
+    maxRandomValue:{value:100, type:'number'},
+    textStyling: {value:[], type:'font', min:1 },
+    // {type:'font', value:{ family: "Roboto", style: "Regular" }}
   }
 
   let containerStylingOpts = {
@@ -175,7 +178,7 @@
   let blockStylingOpts = {
     gap:{value:10, type:'number', defaultVisibility:'flex' },
     produceOne: {value:false, type:'boolean', hideItem:'*', hideOn:true, defaultVisibility:'flex' },
-    quantity: { value:1, type:'number', min:1, defaultVisibility:'flex' },
+    quantity: { value:10, type:'number', min:1, defaultVisibility:'flex' },
     randomValues: { value:true, type:'boolean', defaultVisibility:'flex' },
     displayAsGrid: { value:false, type:'boolean', hideItem:['gridTemplateColumns', 'gridTemplateRows'], hideOn:false, defaultVisibility:'flex' },
     gridTemplateColumns: { value:1, type:'number', defaultVisibility:'none' },
@@ -368,7 +371,6 @@
 
         Object.keys(styling).forEach(id=>{
           styling[id].width = containerOptions.container.width;
-          console.log('after', containerOptions.container.width, styling[id].width)
         })
       }
       
@@ -384,7 +386,7 @@
 
   const randomiseValues = (schema, fieldStyling, blockOptions) => {
     // fields -> create N versions with random values
-    let numberToCreate = 10;
+    let numberToCreate = blockOptions.block.quantity;
     let newItems = [];
 
     for (let k = 0; k < numberToCreate; k++) {
@@ -392,6 +394,7 @@
         Object.keys(newVersion).forEach(field=>{
             let dataType = fieldStyling[field].dataType;
             let value = newVersion[field]
+
             // 'string', 'integer', 'decimal', 'date', 'boolean'              
             if (dataType==='string') {
                 newVersion[field] = createRandomString(value.length*Math.floor(value.length+(Math.random()*1.5)));
@@ -408,6 +411,16 @@
                 fieldStyling[field].roundDecimals, 
               );
             }
+
+
+            if (fieldStyling[field].addFields) {
+              let tag = field+": ";
+              newVersion[field] = tag+newVersion[field];
+              if (fieldStyling[field].fieldFills.length) {
+                
+                fieldStyling[field].textStyling.push({type:'fill', range:[0, tag.length], value:fieldStyling[field].fieldFills });
+              }
+            }
         })        
         newItems.push(newVersion)
     }
@@ -423,12 +436,12 @@
     } 
 
     let containerStylingValue = grabValueField(containerStyling);
-    userFields = randomiseValues(userFields[0], grabValueField({...fieldStyling}), blockOptions);
+    let grabbedStyling = grabValueField({...fieldStyling});
+    userFields = randomiseValues(userFields[0], grabbedStyling, grabValueField({...blockOptions}));
     let blocks = userFields.map(fields=>
       {
-          let newStyling = grabValueField({...fieldStyling});
+          let newStyling = JSON.parse(JSON.stringify(grabbedStyling));
           checkDimensionOptions(newStyling, containerStylingValue);
-          console.log(newStyling);
           return {contents: convertObjectIntoCollectionArr(fields, newStyling)}
       }
     )
