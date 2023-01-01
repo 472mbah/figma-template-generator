@@ -60,99 +60,82 @@
 
 </style>
 
+
 <script>
-
-  let pillars = `
-(1) Standing during obligatory prayers if one is able to do so
-
-(2) The opening takbeer (saying “Allahu akbar”)
-
-(3) Reciting al-Faatihah
-
-(4) Rukoo’ (bowing), the least of which means bending so that the hands can touch the knees, but the most complete form means making the back level and the head parallel with it.
-
-(5) Rising from bowing
-
-(6) Standing up straight
-
-(7) Sujood (prostration), the most perfect form of which is placing the forehead, nose, palms, knees and toes firmly on the ground, and the least of which is placing a part of each of these on the ground.
-
-(8) Rising from prostration
-
-(9) Sitting between the two prostrations. However one sits is good enough, but the Sunnah is to sit muftarishan, which means sitting on the left foot and holding the right foot upright with the toes pointing towards the qiblah.
-
-(10) Being at ease in each of these physical pillars
-
-(11) The final tashahhud
-
-(12) Sitting to recite the final tashahhud and the two salaams
-
-(13) The two salaams. This means saying twice, “al-salaamu ‘alaykum wa rahmat-Allah (Peace be upon you and the mercy of Allah).” In naafil prayers it is sufficient to say one salaam; the same also applies to the funeral prayer.
-
-(14) Doing the pillars in the order mentioned here. If a person deliberately prostrates before bowing, for example, the prayer is invalidated; if he does that by mistake, he has to go back and bow, and then prostrate.  
-  `
-
-  let obligatory = `
-  
-  (1) Takbeers other than the opening takbeer
-
-(2) Saying “Sami’a Allahu liman hamidah (Allah hears those who praise Him” – for the imam and for the one who is praying alone.
-
-(3) Saying “Rabbana wa laka’l-hamd (Our Lord, to You be praise)”
-
-(4) Saying “Subhaana rabbiy al-‘azeem (Glory be to my Lord Almighty)” once when bowing
-
-(5) Saying “Subhaana rabbiy al-a’laa (Glory be to my Lord most High)” once when prostrating
-
-(6) Saying “Rabb ighfir li (Lord forgive me)” between the two prostrations
-
-(7) The first tashahhud
-
-(8) Sitting for the first tashahhud
-  
-  `
-
-  let conditions = `
-  
-  (1) Islaam
-
-  (2) Sanity 
-
-  (3) Reaching the age of Maturity 
-
-  (4) Being in a state of Ritual Impurity (i.e. Ablution)
-
-  (5) Removal of Filth
-
-  (6) Covering the ‘Awrah;
-
-  (7) The Entrance of the Proper Time
-
-  (8) Facing the Qiblah 
-
-  (9) Having the correct Intention
-  
-  `
-
-  const convertIntoJsonObject = (str) => {
-    let singleLines = str.split('\n').filter(line=>line.length && !/(^\s+)(\s+$)/.test(line)).map(item=>item.replace(/^\s+|\s+$/, ''));
-    let obj = singleLines.reduce((s, l, i)=>{
-      s[i] = l;
-      return s;
-    }, {})
-    return obj;
+  const createRandomString = (size=100) => {
+    let letters = ['a', ' ', 'b', 'c',  'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', ' ', 'o', 'p', 'q', 'r', 's', 't', 'u', ' ', 'v', 'w', 'x', ' ', 'y', 'z'];
+    let characters = [];
+    for (let k = 0; k < size; k++) {
+        let nextChar = Math.floor(Math.random()*(letters.length-1));
+        characters.push(letters[nextChar]);
+    }
+    return characters.join('')
   }
 
-  let pillarsStr = JSON.stringify(convertIntoJsonObject(pillars));
-  let obligStr = JSON.stringify(convertIntoJsonObject(obligatory));
-  let condStr = JSON.stringify(convertIntoJsonObject(conditions));
+  const roundDecimalNumber = (value, decimalPoints) => {
+      if(!Number.isInteger(decimalPoints)) return value;
+      let multiplier = 1;
+      while(decimalPoints>0) {
+          multiplier *= 10;
+          decimalPoints--;
+      }
+      return Math.round(value * multiplier) / multiplier;
+  }
 
-  let mode = 'pill';
+  const createRandomNumber = (min, max, type, unit, round) => {
+      let number = min + (Math.random()*max);
+      if (type==='decimal') return (round !== undefined ? roundDecimalNumber(number, round) : number) + (unit ? unit : '');
+      return Math.floor(number) + (unit ? unit : '');
+  }
 
-  let cond = { s:{ r: 0, g: 114/255, b: 12/255 }, f:{ r: 139/255, g: 255/255, b: 151/255 } }
-  let pill = { s:{ r: 4/255, g: 112/255, b: 173/255 }, f:{ r: 139/255, g: 213/255, b: 255/255 } }
-  let obl = { s:{ r: 173/255, g: 4/255, b: 4/255 }, f:{ r: 255/255, g: 188/255, b: 139/255 } }
+  const createRandomDate = (dateFormat='date', language='en-GB') => {
 
+      /*
+          resources: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+                    https://stackoverflow.com/questions/3552461/how-do-i-format-a-date-in-javascript
+      */
+
+                    let today = new Date();
+      let numericalFormat = today/1;
+      let lowerBound = numericalFormat - 100;
+      let upperBound = numericalFormat + 100;
+      let randomised = createRandomNumber(lowerBound, upperBound);
+      let randomDate = new Date(randomised);
+
+      switch (dateFormat){
+          case 'date':
+              return randomDate.toLocaleDateString(language);
+          case 'time':
+              return randomDate.toLocaleTimeString(language); 
+          case 'date-time':
+              return randomDate.toLocaleString(language, { timeZone: 'UTC' });
+          case 'speakable':
+              let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+              return randomDate.toLocaleDateString(language, options);                      
+          default: 
+              return randomised;
+      }
+
+      // return randomDate.toLocaleDateString(language); // 9/17/2016 (date)
+      // return randomDate.toLocaleTimeString(language); // 6:17:29 PM (time)
+      // return randomDate.toLocaleDateString(language, options); // Thursday, 7 August 2031 (speakable)
+      // return randomDate.toLocaleString(language, { timeZone: 'UTC' }); // 17/08/2073, 08:50:30 (date-time)
+
+  }
+
+  const createRandomBoolean = (format='yes/no') => {
+      let value = Math.random();
+      let targetIndex = 0;
+      if (value > .5) 
+          targetIndex = 1;
+
+      let options = format.split('/');
+      if (options.length===2) {
+          return options[targetIndex];
+      }else {
+          return "false"
+      }
+  }
 </script>
 
 <script>
@@ -166,7 +149,12 @@
     strokeWeight:{value:1, type:'number', min:0},
     fills: {value:[], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
-    fontSize: {value:12, type:'number', min:1 }
+    fontSize: {value:12, type:'number', min:1 },
+    dataType: {value:'string', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
+    dateFormats: {value:'date-time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
+    booleanFormats: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
+    minRandomValue:{value:0, type:'number'},
+    maxRandomValue:{value:100, type:'number'}
     // textStyling: {value:[{type:'font', value:{ family: "Roboto", style: "Regular" }}], type:'font', min:1 },
   }
 
@@ -389,6 +377,23 @@
 
   }
 
+
+
+  const randomiseValues = (schema, fieldStyling, blockOptions) => {
+    // fields -> create N versions with random values
+    let numberToCreate = 10;
+
+    for (let k = 0; k < numberToCreate; k++) {
+        let newVersion = JSON.parse(JSON.stringify(schema));
+        Object.keys(newVersion).forEach(field=>{
+            let dataType = fieldStyling[field].dataType;
+            let value = newVersion[field]
+            console.log(dataType, value);
+        })        
+    }
+    
+  } 
+
   const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions, allBlocks) => {
 
     if (!Array.isArray(userFields)) {
@@ -396,6 +401,7 @@
     } 
 
     let containerStylingValue = grabValueField(containerStyling);
+    randomiseValues(userFields[0], grabValueField({...fieldStyling}), blockOptions);
     let blocks = userFields.map(fields=>
       {
           let newStyling = grabValueField({...fieldStyling});
@@ -432,9 +438,7 @@
 <script>
 
 document.getElementById('json').value = 
-// mode==='cond' ? condStr : mode==='pill' ? pillarsStr : obligStr
-`[
-  
+`
 {
   "name":"My name is Momodou!",
   "age":"3232",
@@ -443,22 +447,18 @@ document.getElementById('json').value =
   "another2": "Hello world, how is it going?",
   "another3": "short",
   "another3": "lorem ipsum something garbage and yes thats all good!"
-},
-
-{
-  "name":"My name is John!",
-  "age":"3232",
-  "message": "Hello world, how is it going?",
-  "another": "Hello world, how is it going?",
-  "another2": "Hello world, how is it going?",
-  "another3": "short",
-  "another3": "lorem ipsum something garbage and yes thats all good!"
 }
-
-
-]
 `
 
+// {
+//   "name":"My name is John!",
+//   "age":"3232",
+//   "message": "Hello world, how is it going?",
+//   "another": "Hello world, how is it going?",
+//   "another2": "Hello world, how is it going?",
+//   "another3": "short",
+//   "another3": "lorem ipsum something garbage and yes thats all good!"
+// }
 
 
 
