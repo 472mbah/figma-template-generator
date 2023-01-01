@@ -154,7 +154,15 @@
     fontSize: {value:12, type:'number', min:1 },
     roundDecimals: {value:3, type:'number', min:0 },
     unit: {value:" Degrees", type:'string' },
-    dataType: {value:'string', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
+    dataType: {value:'date', type:'select-options', 
+              multipleHide:[
+                  {
+                    hideItem:['dateFormat', 'language',
+                             'booleanFormat', 'minRandomValue', 'maxRandomValue'],
+                    hideOn:'string'
+                  }
+                  ],
+              options:['string', 'integer', 'decimal', 'date', 'boolean'] },
     randomStringLength: {value:30, type:'number', min:1 },
     dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
     language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
@@ -193,15 +201,11 @@
     startFromY: { value:100, type:'number', defaultVisibility:'flex' },
   }
 
-
-
   const convertObjectIntoCollectionArr = (obj, meta={}) => 
     Object.keys(obj).map(key=> Object.assign(
         { type:'text', value:obj[key], key }, 
         meta.hasOwnProperty(key) ? meta[key] : {} 
     ))
-
-  
 
   const produceKeyForm = (object, stylingOptions) => {
     let duplicateObj = {  };
@@ -211,8 +215,9 @@
     return duplicateObj
   }
 
-
-
+  // resource: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+  const rgbToHex = ({r, g, b}) => 
+    "#" + (1 << 24 | (r*255) << 16 | (g*255) << 8 | (b*25)).toString(16).slice(1);
 
   const convertHexToFigmaRGB = (hex) => {
     // https://stackoverflow.com/questions/58184508/html5-input-type-color-read-single-rgb-values
@@ -225,7 +230,7 @@
   const produceInputFields = (fields, form, parentField, manageClassData=false) => {
     const root = document.documentElement;
     Object.keys(fields).forEach(key=>{
-      let { value, type, max, min, hideItem, hideOn, defaultVisibility, options } = fields[key];
+      let { value, type, max, min, hideItem, hideOn, defaultVisibility, options, multipleHide } = fields[key];
       let container = document.createElement('div');
       container.className = 'row gap1 space-between'
       let label = document.createElement('label')
@@ -253,6 +258,10 @@
         let inputField = document.createElement('input');
         inputField.type = 'color';
         inputField.value = value;
+
+        if (Array.isArray(fields[key].value) && fields[key].value.length) 
+          inputField.value = rgbToHex(fields[key].value[0].color);
+        
 
         inputField.onchange = (e)=>{
           fields[key].value = convertHexToFigmaRGB(e.target.value);
@@ -292,12 +301,25 @@
           el.innerText = opt;
           el.value = i;
           selectBlock.appendChild(el);
-        })
+        });
+
+        selectBlock.value = options.indexOf(fields[key].value);
 
         selectBlock.onchange = (e)=>{
             let index = parseInt(e.target.value);
             if (!Number.isInteger(index) || index < 0 || index >= options.length) return;
-            fields[key].value = options[index];      
+            fields[key].value = options[index]; 
+            if (manageClassData && Array.isArray(multipleHide)) {
+                multipleHide.forEach(hideOption=>{
+                  let fieldsFound = [];
+                  let valueToSet = fields[key].value===hideOption.hideOn ? 'none' : 'flex';
+                  fieldsFound = hideItem==='*' ? Object.keys(fields).filter(key_=>key_!==key) : hideOption.hideItem;
+                  fieldsFound.forEach(f=>{
+                    root.style.setProperty(`--figma-design-generator-var-${f}`, valueToSet);
+                  })
+                })
+            }
+
         }
         container.appendChild(selectBlock);
 
@@ -333,7 +355,7 @@
     })
   }
 
-  const produceTemplateBlock = (styleForm, manageClassData=false) => {
+  const produceTemplateBlock = (styleForm, manageClassData=true) => {
 
     Object.keys(styleForm).forEach((item, i)=>{
 
@@ -402,8 +424,6 @@
       }
 
   }
-
-
 
   const randomiseValues = (schema, fieldStyling, blockOptions) => {
     // fields -> create N versions with random values
@@ -541,7 +561,7 @@ document.getElementById('create').onclick = () => {
   document.getElementById('create').onclick = () => {
 
     document.getElementById('main').innerHTML = ""
-    produceTemplateBlock(containerKeyForm);
+    produceTemplateBlock(containerKeyForm, true);
     document.getElementById('create').innerText = "Manage Blocks"
 
     document.getElementById('create').onclick = () => {
