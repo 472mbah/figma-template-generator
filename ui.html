@@ -146,14 +146,6 @@
     height: {value:-1, type:'number', min:-1},
     // strokes: {value:[{ type: 'SOLID', color: mode==='cond' ? cond.s : mode==='pill' ? pill.s : obl.s }], type:'figma-colour'},
     strokes: {value:[], type:'figma-colour'},
-    strokeWeight:{value:1, type:'number', min:0},
-    fills: {value:[], type:'figma-colour'},
-    fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
-    addFields: {value:true, type:'boolean', defaultVisibility:'flex' },
-    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
-    fontSize: {value:12, type:'number', min:1 },
-    roundDecimals: {value:3, type:'number', min:0 },
-    unit: {value:" Degrees", type:'string' },
     dataType: {value:'date', type:'select-options', 
               multipleHide:[
                   {
@@ -163,6 +155,15 @@
                   }
                   ],
               options:['string', 'integer', 'decimal', 'date', 'boolean'] },
+    strokeWeight:{value:1, type:'number', min:0},
+    fills: {value:[], type:'figma-colour'},
+    fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
+    addFields: {value:true, type:'boolean', defaultVisibility:'flex' },
+    cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
+    fontSize: {value:12, type:'number', min:1 },
+    roundDecimals: {value:3, type:'number', min:0 },
+    unit: {value:"", type:'string' },
+
     randomStringLength: {value:30, type:'number', min:1 },
     dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
     language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
@@ -324,6 +325,19 @@
         container.appendChild(selectBlock);
 
       }
+      
+      else if (type==='string') {
+
+        let inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.value = value;
+        inputField.onchange = (e)=>{
+            fields[key].value = e.target.value;
+        };
+        container.appendChild(inputField);          
+
+      }
+      
       else if (/^number-option-(\d+)$/.test(type)) {
 
         let miniParent = document.createElement('div');
