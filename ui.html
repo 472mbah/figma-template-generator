@@ -95,12 +95,12 @@
                     https://stackoverflow.com/questions/3552461/how-do-i-format-a-date-in-javascript
       */
 
-                    let today = new Date();
-      let numericalFormat = today/1;
+      let today = new Date();
+      let numericalFormat = today/1000;
       let lowerBound = numericalFormat - 100;
       let upperBound = numericalFormat + 100;
       let randomised = createRandomNumber(lowerBound, upperBound);
-      let randomDate = new Date(randomised);
+      let randomDate = new Date(randomised*1000);
 
       switch (dateFormat){
           case 'date':
@@ -150,9 +150,12 @@
     fills: {value:[], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
-    dataType: {value:'string', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
-    dateFormats: {value:'date-time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
-    booleanFormats: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
+    roundDecimals: {value:3, type:'number', min:0 },
+    unit: {value:" Degrees", type:'string' },
+    dataType: {value:'date', type:'select-options', options:['string', 'integer', 'decimal', 'date', 'boolean']},
+    dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
+    language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
+    booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
     minRandomValue:{value:0, type:'number'},
     maxRandomValue:{value:100, type:'number'}
     // textStyling: {value:[{type:'font', value:{ family: "Roboto", style: "Regular" }}], type:'font', min:1 },
@@ -382,15 +385,34 @@
   const randomiseValues = (schema, fieldStyling, blockOptions) => {
     // fields -> create N versions with random values
     let numberToCreate = 10;
+    let newItems = [];
 
     for (let k = 0; k < numberToCreate; k++) {
         let newVersion = JSON.parse(JSON.stringify(schema));
         Object.keys(newVersion).forEach(field=>{
             let dataType = fieldStyling[field].dataType;
             let value = newVersion[field]
-            console.log(dataType, value);
+            // 'string', 'integer', 'decimal', 'date', 'boolean'              
+            if (dataType==='string') {
+                newVersion[field] = createRandomString(value.length*Math.floor(value.length+(Math.random()*1.5)));
+            }else if (dataType==='date') {
+                newVersion[field] = createRandomDate(fieldStyling[field].dateFormat, fieldStyling[field].language)
+            }else if (dataType==='boolean') {
+                newVersion[field] = createRandomBoolean(fieldStyling[field].booleanFormat)
+            }else {
+              newVersion[field] = createRandomNumber(
+                fieldStyling[field].minRandomValue,
+                fieldStyling[field].maxRandomValue,
+                dataType,
+                fieldStyling[field].unit, 
+                fieldStyling[field].roundDecimals, 
+              );
+            }
         })        
+        newItems.push(newVersion)
     }
+
+    return newItems;
     
   } 
 
@@ -401,7 +423,7 @@
     } 
 
     let containerStylingValue = grabValueField(containerStyling);
-    randomiseValues(userFields[0], grabValueField({...fieldStyling}), blockOptions);
+    userFields = randomiseValues(userFields[0], grabValueField({...fieldStyling}), blockOptions);
     let blocks = userFields.map(fields=>
       {
           let newStyling = grabValueField({...fieldStyling});
