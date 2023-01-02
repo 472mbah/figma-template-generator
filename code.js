@@ -1,5 +1,5 @@
 
-figma.showUI(__html__, {width: 300, height: 600});
+figma.showUI(__html__, {width: 300, height: 430});
 
 figma.loadFontAsync({ family: "Inter", style: "Regular" })
 figma.loadFontAsync({ family: "Roboto", style: "Regular" })
@@ -146,7 +146,7 @@ const identifyTextDimensions = (inputInfo, textNode) => {
 
 
 
-    textNode.resize(inputInfo.width, inputInfo.height)
+    textNode.resize(inputInfo.width < 0.5 ? 30 : inputInfo.width, inputInfo.height)
 
     inputInfo.width = textNode.width;
     inputInfo.height = textNode.height;

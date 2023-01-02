@@ -172,32 +172,54 @@
   let stylingOpts = {
     padding: {value:0, type:'number', min:0},
     width: {value:-1, type:'number', min:-1},
-    height: {value:-1, type:'number', min:-1},
-    // strokes: {value:[{ type: 'SOLID', color: mode==='cond' ? cond.s : mode==='pill' ? pill.s : obl.s }], type:'figma-colour'},
+    height: {value:-1, type:'number', min:-1}, 
     strokes: {value:[], type:'figma-colour'},
-    dataType: {value:'string', type:'select-options', 
-              multipleHide:[
+    dataType: {value:'none', type:'select-options', 
+              multipleHide:
+              [
                   {
                     hideItem:['dateFormat', 'language',
                              'booleanFormat', 'minRandomValue', 'maxRandomValue'],
                     hideOn:'string'
-                  }
-                  ],
-              options:['string', 'integer', 'decimal', 'date', 'boolean'] },
+                  },
+                  {
+                    hideItem:['dateFormat', 'language',
+                             'booleanFormat', 'minRandomValue', 'maxRandomValue'],
+                    hideOn:'none'
+                  },                  
+                  {
+                    hideItem:['dateFormat', 'language',
+                             'booleanFormat', 'randomStringLength'],
+                    hideOn:'integer'
+                  },
+                  {
+                    hideItem:['dateFormat', 'language',
+                             'booleanFormat', 'randomStringLength'],
+                    hideOn:'decimal'
+                  },  
+                  {
+                    hideItem:['dateFormat', 'language',
+                             'minRandomValue', 'maxRandomValue', 'randomStringLength'],
+                    hideOn:'boolean'
+                  },
+                  {
+                    hideItem:['language',
+                             'minRandomValue', 'maxRandomValue', 'randomStringLength'],
+                    hideOn:'date'
+                  },                                    
+              ],
+              options:['none','string', 'integer', 'decimal', 'date', 'boolean', 'none'] },
+    randomStringLength: {value:30, type:'number', min:1, defaultVisibility:'none' },
+    roundDecimals: {value:3, type:'number', min:0, defaultVisibility:'none' },
+    unit: {value:"", type:'string', defaultVisibility:'none' },
+    dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable'], defaultVisibility:'none'},
+    language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US'], defaultVisibility:'none'},
+    booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false'], defaultVisibility:'none'},
+    minRandomValue:{value:0, type:'number', defaultVisibility:'none'},
+    maxRandomValue:{value:100, type:'number', defaultVisibility:'none'},
     strokeWeight:{value:1, type:'number', min:0},
-    // fills: {value:[], type:'figma-colour'},
-    // fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
-    // fontColour: {value:[{ type: 'SOLID', color: {r:0, g:1, b:0} }], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
-    roundDecimals: {value:3, type:'number', min:0 },
-    unit: {value:"", type:'string' },
-    randomStringLength: {value:30, type:'number', min:1 },
-    dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
-    language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
-    booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
-    minRandomValue:{value:0, type:'number'},
-    maxRandomValue:{value:100, type:'number'},
     textStyling: {value:[], type:'ignore', min:1 },
     // {type:'font', value:{ family: "Roboto", style: "Regular" }}
   }
@@ -215,10 +237,8 @@
 
   let blockStylingOpts = {
     gap:{value:10, type:'number', defaultVisibility:'flex' },
-    produceOne: {value:false, type:'boolean', hideItem:'*', hideOn:true, defaultVisibility:'flex' },
     quantity: { value:20, type:'number', min:1, defaultVisibility:'flex' },
-    randomValues: { value:true, type:'boolean', defaultVisibility:'flex' },
-
+    randomValues: { value:false, type:'boolean', defaultVisibility:'flex' },
     directionStyle: {value:'grid', type:'select-options', options:['grid', 'flex'],
         multipleHide:[
                       {
@@ -227,13 +247,10 @@
                       }
                   ],
     },
-    
     direction: {value:'vertical', type:'select-options', options:['horizontal', 'vertical']},
     batchSize: { value:3, type:'number' },
-
     randomBlockColours: { value:true, type:'boolean', defaultVisibility:'flex' },
     randomBlockColourRange: {value:'full', type:'select-options', options:['full', 'bright', 'light']},
-
     matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
     startFromX: { value:100, type:'number', defaultVisibility:'flex' },
@@ -415,15 +432,27 @@
               callback(options[index], callbackParams)
             }
 
-            if (manageClassData && Array.isArray(multipleHide)) {
-                multipleHide.forEach(hideOption=>{
-                  let fieldsFound = [];
-                  let valueToSet = fields[key].value===hideOption.hideOn ? 'none' : 'flex';
-                  fieldsFound = hideItem==='*' ? Object.keys(fields).filter(key_=>key_!==key) : hideOption.hideItem;
-                  fieldsFound.forEach(f=>{
-                    root.style.setProperty(`--figma-design-generator-var-${f}`, valueToSet);
-                  })
-                })
+            if (!initialising && manageClassData && Array.isArray(multipleHide)) {
+                let chosenOption = undefined;
+                for (let b = 0; b < multipleHide.length; b++) {
+                    if (multipleHide[b].hideOn===fields[key].value) {
+                      chosenOption = b;
+                      break;
+                    }
+                }
+                // multipleHide.forEach(hideOption=>{
+                  if (chosenOption!==undefined) {
+                    let fieldsFound = [];
+                    fieldsFound = multipleHide[chosenOption].hideOn==='*' ? 
+                    Object.keys(fields).filter(key_=>key_!==key) : multipleHide[chosenOption].hideItem;
+
+                    Object.keys(fields).forEach(opt=>{
+                      root.style.setProperty(`--figma-design-generator-var-${opt}`, 'flex');
+                    })
+                    fieldsFound.forEach(f=>{
+                      root.style.setProperty(`--figma-design-generator-var-${f}`, 'none');
+                    })
+                }
             }
         }
 
@@ -499,19 +528,19 @@
 
       let form = document.createElement('form');
       form.className = 'dynamic-form col gap_5'
+      form.style.display = 'none'
 
       let toggleButton = document.createElement('button');
-      toggleButton.innerText = "Hide"
+      toggleButton.innerText = "Show"
       toggleButton.onclick = () => {
-        form.style.display = !form.style.display.length || form.style.display === 'flex' ? 'none' : 'flex'
+        let isVisible = form.style.display === 'flex';
+        form.style.display = isVisible ? 'none' : 'flex'
+        toggleButton.innerText = isVisible ? "Show" : "Hide"
       }
 
       miniNav.appendChild(toggleButton);
 
-
       parent.appendChild(form);
-
-      // styleForm[item] = { ...styleForm[item] }
 
       produceInputFields(styleForm[item], form, item, manageClassData, contentFieldConversion);
 
@@ -603,7 +632,7 @@
                 let value = newVersion[field]
 
                 // 'string', 'integer', 'decimal', 'date', 'boolean'              
-                if (dataType==='string') {
+                if (dataType==='string' || dataType==='none') {
                     newVersion[field] = createRandomString(fieldStyling[field].randomStringLength);
                 }else if (dataType==='date') {
                     newVersion[field] = createRandomDate(fieldStyling[field].dateFormat, fieldStyling[field].language)
@@ -623,8 +652,6 @@
             newItems.push(newVersion)
         }
     }
-
-    console.log('about to', fieldStyling)
 
     Object.keys(schema).forEach(field=>{
       // 'field-fill', 'field-decoration', 'field-spacing'
