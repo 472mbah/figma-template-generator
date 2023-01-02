@@ -167,6 +167,8 @@
 
 <script>
 
+  
+
   let stylingOpts = {
     padding: {value:0, type:'number', min:0},
     width: {value:-1, type:'number', min:-1},
@@ -183,22 +185,20 @@
                   ],
               options:['string', 'integer', 'decimal', 'date', 'boolean'] },
     strokeWeight:{value:1, type:'number', min:0},
-    fills: {value:[], type:'figma-colour'},
-    fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
-    fontColour: {value:[{ type: 'SOLID', color: {r:0, g:1, b:0} }], type:'figma-colour'},
-    addFields: {value:true, type:'boolean', defaultVisibility:'flex' },
+    // fills: {value:[], type:'figma-colour'},
+    // fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
+    // fontColour: {value:[{ type: 'SOLID', color: {r:0, g:1, b:0} }], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
     roundDecimals: {value:3, type:'number', min:0 },
     unit: {value:"", type:'string' },
-
     randomStringLength: {value:30, type:'number', min:1 },
     dateFormat: {value:'time', type:'select-options', options:['date-time', 'date', 'time', 'timestamp', 'speakable']},
     language: {value:'en-US', type:'select-options', options:['en-GB', 'en-US']},
     booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false']},
     minRandomValue:{value:0, type:'number'},
     maxRandomValue:{value:100, type:'number'},
-    textStyling: {value:[], type:'font', min:1 },
+    textStyling: {value:[], type:'ignore', min:1 },
     // {type:'font', value:{ family: "Roboto", style: "Regular" }}
   }
 
@@ -265,11 +265,76 @@
     const b = parseInt(hex.substr(5,2), 16)
     return [{type:'SOLID', color:{ r:r/255, g:g/255, b:b/255 }}]
   }
-  
+
+  const dynamicAppendFeature = (selectType, {form, resetValues}) => {
+    let quadrantData = resetValues.indivStyleForm;
+    if (quadrantData.hasOwnProperty(selectType)) return;
+    // console.log('user selected', selectType, resetValues)
+
+    let additionalObj = 
+        /fill/.test(selectType) ? 
+            {value:[], type:'figma-colour'} : 
+        /decoration/.test(selectType) ? 
+            {
+              value:'NONE', 
+              type:'select-options', 
+              options:['NONE', 'UNDERLINE', 'STRIKETHROUGH']
+            } : 
+        /spacing/.test(selectType) ? 
+            {
+              value:0, type:'number', defaultVisibility:'flex',
+            } : 
+        selectType==='attach-field' ?    
+            {
+              value:false, type:'boolean'      
+            } : 
+            {}
+
+    if (!Object.keys(additionalObj).length) return;
+
+    quadrantData[selectType] = additionalObj
+    form.innerHTML = '';
+    produceInputFields(
+      quadrantData, form, 
+      resetValues.parentField,
+      resetValues.manageClassData,
+      resetValues.contentFieldConversion,
+    )
+
+  }
+
+  const produceMoreTextStylingFeatures = (form, resetValues) => {
+
+      let quadrantData = resetValues.indivStyleForm;
+      if (quadrantData.hasOwnProperty('textStylingAdditions')) return;
+      
+      let additionalObj = {
+        value:'fill',
+        type:'select-options',
+        options: [ 'fill', 'decoration', 'spacing', 'attach-field', 'field-fill', 'field-decoration', 'field-spacing' ],
+        callbackParams: { form, resetValues },
+        callback: dynamicAppendFeature
+      }
+
+      quadrantData.textStylingAdditions = additionalObj
+
+      form.innerHTML = '';
+      produceInputFields(
+        quadrantData, form, 
+        resetValues.parentField,
+        resetValues.manageClassData,
+        resetValues.contentFieldConversion,
+      )
+
+      // console.log(form, resetValues)
+
+  }
+
   const produceInputFields = (fields, form, parentField, manageClassData=false, contentFieldConversion={}) => {
     const root = document.documentElement;
     Object.keys(fields).forEach(key=>{
-      let { value, type, max, min, hideItem, hideOn, defaultVisibility, options, multipleHide } = fields[key];
+      let { value, type, max, min, hideItem, hideOn, 
+        defaultVisibility, options, multipleHide, callbackParams, callback } = fields[key];
       let container = document.createElement('div');
       container.className = 'row gap1 space-between'
       let label = document.createElement('label')
@@ -341,10 +406,15 @@
           selectBlock.appendChild(el);
         });
 
-        const wheneverValueChanges = (e) => {
+        const wheneverValueChanges = (e, initialising=false) => {
             let index = parseInt(e.target.value);
             if (!Number.isInteger(index) || index < 0 || index >= options.length) return;
             fields[key].value = options[index]; 
+            // callbackParams, callback
+            if (!initialising && callback instanceof Function) {
+              callback(options[index], callbackParams)
+            }
+
             if (manageClassData && Array.isArray(multipleHide)) {
                 multipleHide.forEach(hideOption=>{
                   let fieldsFound = [];
@@ -359,11 +429,12 @@
 
         let valueIndex = options.indexOf(fields[key].value)
         selectBlock.value = valueIndex;
-        wheneverValueChanges({ target:{value:valueIndex.toString()} })
+        wheneverValueChanges({ target:{value:valueIndex.toString()} }, true)
 
         selectBlock.onchange = (e)=>{
           wheneverValueChanges(e);
         }
+
         container.appendChild(selectBlock);
 
       }
@@ -405,13 +476,11 @@
 
       }
 
-
-
       form.appendChild(container)
     })
   }
 
-  const produceTemplateBlock = (styleForm, manageClassData=true, fieldConversions={}, contentFieldConversion={}) => {
+  const produceTemplateBlock = (styleForm, manageClassData=true, fieldConversions={}, contentFieldConversion={}, addTextStyling) => {
 
     Object.keys(styleForm).forEach((item, i)=>{
 
@@ -446,14 +515,47 @@
 
       produceInputFields(styleForm[item], form, item, manageClassData, contentFieldConversion);
 
+      if (addTextStyling) {
+            let button = document.createElement('button');
+            button.innerText = 'Add text styling';
+            button.onclick = (e)=> {
+              e.preventDefault();
+              produceMoreTextStylingFeatures(form, {
+                indivStyleForm:styleForm[item], 
+                manageClassData, 
+                fieldConversions, 
+                contentFieldConversion
+              })
+            };
+            form.appendChild(button);
+        }
+
       document.getElementById('main').append(parent);
 
 
     })
   }
 
-  const grabValueField = (item) => {
-    let newItem = JSON.parse(JSON.stringify(item))
+  const removeIrregularItems = (objects) => {
+    Object.keys(objects).forEach(title => {
+        let block = objects[title];
+        if (block.hasOwnProperty('textStylingAdditions')) {
+            delete objects[title].textStylingAdditions;
+        }
+    })
+    // textStylingAdditions
+  }
+
+  const grabValueField = (item, hasTextStyling=false) => {
+    if (hasTextStyling) {
+      removeIrregularItems(item);
+      console.log('started 1');
+      console.log(item);
+    }
+    let newItem = JSON.parse(JSON.stringify(item));
+    if (hasTextStyling) {
+      console.log('started 2')
+    }
     Object.keys(newItem).forEach((it)=>{
       let properties = newItem[it];
       Object.keys(properties).forEach((prop)=>{
@@ -492,7 +594,6 @@
     let createNewValues = blockOptions.block.randomValues
     let numberToCreate = blockOptions.block.quantity;
     let newItems = createNewValues ? [] : previousOpts;
-
     if (createNewValues) {
         for (let k = 0; k < numberToCreate; k++) {
             let newVersion = JSON.parse(JSON.stringify(schema));
@@ -523,21 +624,40 @@
         }
     }
 
+    console.log('about to', fieldStyling)
+
     Object.keys(schema).forEach(field=>{
-      if (Array.isArray(fieldStyling[field].fontColour) && fieldStyling[field].fontColour.length > 0) {
-        fieldStyling[field].textStyling.push({type:'fill', value:fieldStyling[field].fontColour });
+      // 'field-fill', 'field-decoration', 'field-spacing'
+
+      if (Array.isArray(fieldStyling[field].fill) && fieldStyling[field].fill.length > 0) {
+        fieldStyling[field].textStyling.push({type:'fill', value:fieldStyling[field].fill });
       }
+      if (fieldStyling[field].decoration) {
+        fieldStyling[field].textStyling.push({type:'decoration', value:fieldStyling[field].decoration });
+      }
+      if (fieldStyling[field].spacing > 0) {
+        fieldStyling[field].textStyling.push({type:'spacing', value:{ unit:'PIXELS', value:fieldStyling[field].spacing  } });
+      }
+
     })
     
     for (let k = 0; k < newItems.length; k++) {
       Object.keys(schema).forEach(field=>{
-
-        if (fieldStyling[field].addFields) {
+        if (fieldStyling[field]['attach-field']) {
             let tag = field+": ";
             newItems[k][field] = tag+newItems[k][field];
-            if (fieldStyling[field].fieldFills.length) {
-              fieldStyling[field].textStyling.push({type:'fill', range:[0, tag.length], value:fieldStyling[field].fieldFills });
+            if (Array.isArray(fieldStyling[field]['field-fill']) && fieldStyling[field]['field-fill'].length) {
+              fieldStyling[field].textStyling.push({type:'fill', range:[0, tag.length], value:fieldStyling[field]['field-fill'] });
             }
+
+            if (fieldStyling[field]['field-decoration']) {
+              fieldStyling[field].textStyling.push({type:'decoration', range:[0, tag.length], value:fieldStyling[field]['field-decoration'] });
+            }
+
+            if (fieldStyling[field]['field-spacing']) {
+              fieldStyling[field].textStyling.push({type:'spacing', range:[0, tag.length], value: { unit:'PIXELS', value:fieldStyling[field]['field-spacing']  } });
+            }
+
           }
       })
 
@@ -556,13 +676,19 @@
 
   const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions, allBlocks) => {
 
+    // delete fieldStyling.textStylingAdditions;
+    // delete fieldStyling.textStylingAdditions;
+
+
     if (!Array.isArray(userFields)) {
       userFields = [userFields];
     } 
 
     let containerStylingValue = grabValueField(containerStyling);
-    let grabbedStyling = grabValueField({...fieldStyling});
+    let grabbedStyling = grabValueField({...fieldStyling}, true);
+    // console.log(fieldStyling)
     let condenseBlockOptions = grabValueField({...blockOptions})
+
 
 
     userFields = randomiseValues(userFields[0], grabbedStyling, condenseBlockOptions, userFields);
@@ -686,7 +812,7 @@ document.getElementById('create').onclick = () => {
   }
 
   document.getElementById('main').innerHTML = ""
-  produceTemplateBlock(keyForm, true, stepOneDataTransform, stepOneDataContentsTransform);
+  produceTemplateBlock(keyForm, true, stepOneDataTransform, stepOneDataContentsTransform, true);
 
 
 }
