@@ -306,9 +306,16 @@ const createBlock = (data) => {
         let nodes = [];
         let checklist = { padding:0, strokeWeight:0 }
         let checklistOuter = { padding:0, strokeWeight:0, gap:0 }
+        let alignInfo = data.alignInfo;
+        let blockAlignDistance = 100;
 
+        let previousGridStatus = 0;
+        let gridLevelCounter = 0;
+        
         let contentStartX = data.startFromX || 100;
         let contentStartY = data.startFromY || 100;
+        
+        let maxYValue = contentStartY - blockAlignDistance;
 
         makeValuesConsistent(data, checklistOuter);
 
@@ -429,8 +436,53 @@ const createBlock = (data) => {
             flattenArray(groupedNodes, flattenedBlock)
             let blockDimensions = findContentDimensions(flattenedBlock);
             
-            contentStartX = blockDimensions.xMax + 50;
-            contentStartY = 100;
+            // alignInfo { type, direction, batchSize }
+
+            if (alignInfo.type==='flex') {
+                if (alignInfo.direction==='horizontal') {
+                    contentStartX = blockDimensions.xMax + blockAlignDistance;
+                    contentStartY = 100;
+                }else {
+                    contentStartX = 100;
+                    contentStartY = blockDimensions.yMax + blockAlignDistance;
+                }
+            }else {
+
+                if (alignInfo.direction==='vertical') {
+
+                    let gridStatus = Math.floor(gridLevelCounter%alignInfo.batchSize);
+                    let reset = gridStatus===(alignInfo.batchSize-1);
+                    // let tempText = figma.createText();
+                    // tempText.characters = `${gridLevelCounter} ( ${contentStartX}, ${contentStartY} ) - counter:${gridLevelCounter}, modulo:${gridStatus}, reset:${reset.toString()}`;
+                    // tempText.x = contentStartX;
+                    // tempText.y = contentStartY;
+
+                    contentStartX = reset ? 100 : blockDimensions.xMax + blockAlignDistance;
+                    contentStartY = reset ? blockDimensions.yMax + blockAlignDistance : maxYValue + blockAlignDistance;
+
+                    if (reset) maxYValue = blockDimensions.yMax;
+
+                    gridLevelCounter++;
+
+                    // if (gridStatus === 0) {
+                    //     maxYValue = blockDimensions.yMax;
+                    //     contentStartX = 100;
+                    // }
+
+                    // console.log(gridLevelCounter-1, maxYValue, contentStartY);
+
+                    // previousGridStatus = gridStatus;
+
+                }else {
+
+
+
+                }
+
+
+            }
+
+
 
             nodes.push(groupedNodes)
     
@@ -438,11 +490,11 @@ const createBlock = (data) => {
     
         let flatNodes = []
         flattenArray(nodes, flatNodes)
-
         return flatNodes;
 
     }catch (e) {
         console.log(e);
+        figma.closePlugin();
         return []
     }
 }

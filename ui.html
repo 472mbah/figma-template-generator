@@ -146,7 +146,7 @@
     height: {value:-1, type:'number', min:-1},
     // strokes: {value:[{ type: 'SOLID', color: mode==='cond' ? cond.s : mode==='pill' ? pill.s : obl.s }], type:'figma-colour'},
     strokes: {value:[], type:'figma-colour'},
-    dataType: {value:'date', type:'select-options', 
+    dataType: {value:'string', type:'select-options', 
               multipleHide:[
                   {
                     hideItem:['dateFormat', 'language',
@@ -188,14 +188,21 @@
   let blockStylingOpts = {
     gap:{value:10, type:'number', defaultVisibility:'flex' },
     produceOne: {value:false, type:'boolean', hideItem:'*', hideOn:true, defaultVisibility:'flex' },
-    quantity: { value:10, type:'number', min:1, defaultVisibility:'flex' },
+    quantity: { value:20, type:'number', min:1, defaultVisibility:'flex' },
     randomValues: { value:true, type:'boolean', defaultVisibility:'flex' },
-    displayAsGrid: { value:false, type:'boolean', hideItem:['gridTemplateColumns', 'gridTemplateRows'], hideOn:false, defaultVisibility:'flex' },
-    gridTemplateColumns: { value:1, type:'number', defaultVisibility:'none' },
-    gridTemplateRows: { value:1, type:'number', defaultVisibility:'none' },
-    displayAsFlex: { value:true, type:'boolean', hideItem:['flexRow', 'flexColumn'], hideOn:false, defaultVisibility:'flex' },
-    flexRow: { value:false, type:'boolean' },
-    flexColumn: { value:true, type:'boolean', defaultVisibility:'flex' },
+
+    directionStyle: {value:'grid', type:'select-options', options:['grid', 'flex'],
+        multipleHide:[
+                      {
+                        hideItem:['batchSize'],
+                        hideOn:'flex'
+                      }
+                  ],
+    },
+    
+    direction: {value:'vertical', type:'select-options', options:['horizontal', 'vertical']},
+    batchSize: { value:3, type:'number' },
+
     matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
     startFromX: { value:100, type:'number', defaultVisibility:'flex' },
@@ -282,7 +289,6 @@
         selectBlock.value = fields[key].value ? 'Yes' : 'No';
         selectBlock.onchange = (e)=>{
             fields[key].value = e.target.value === 'Yes' ? true : false;
-            // hideItem, hideOn
             if (manageClassData && hideItem!==undefined) {
                 let fieldsFound = [];
                 let valueToSet = fields[key].value===hideOn ? 'none' : 'flex';
@@ -304,9 +310,7 @@
           selectBlock.appendChild(el);
         });
 
-        selectBlock.value = options.indexOf(fields[key].value);
-
-        selectBlock.onchange = (e)=>{
+        const wheneverValueChanges = (e) => {
             let index = parseInt(e.target.value);
             if (!Number.isInteger(index) || index < 0 || index >= options.length) return;
             fields[key].value = options[index]; 
@@ -320,7 +324,14 @@
                   })
                 })
             }
+        }
 
+        let valueIndex = options.indexOf(fields[key].value)
+        selectBlock.value = valueIndex;
+        wheneverValueChanges({ target:{value:valueIndex.toString()} })
+
+        selectBlock.onchange = (e)=>{
+          wheneverValueChanges(e);
         }
         container.appendChild(selectBlock);
 
@@ -484,6 +495,11 @@
     
   } 
 
+  const identifyAlignOptions = (blockOptions) => {
+    let valueFields = grabValueField({...blockOptions}).block;
+    return { type:valueFields.directionStyle, direction:valueFields.direction, batchSize:valueFields.batchSize }
+  }
+
   const unifyUserInput = (userFields, fieldStyling, containerStyling, blockOptions, allBlocks) => {
 
     if (!Array.isArray(userFields)) {
@@ -493,6 +509,7 @@
     let containerStylingValue = grabValueField(containerStyling);
     let grabbedStyling = grabValueField({...fieldStyling});
     userFields = randomiseValues(userFields[0], grabbedStyling, grabValueField({...blockOptions}));
+    let alignInfo = identifyAlignOptions(blockOptions);
     let blocks = userFields.map(fields=>
       {
           let newStyling = JSON.parse(JSON.stringify(grabbedStyling));
@@ -504,6 +521,7 @@
     let outputData = {
       blocks,
       ...containerStylingValue.container,
+      alignInfo
     }
 
     parent.postMessage({ pluginMessage: { type: 'create-block', value:outputData } }, '*')
