@@ -406,7 +406,6 @@ const createBlock = (data) => {
 
                 
             if (needBlock) {
-                // if (align==='vertical' || align==='horizontal') {
                 let flat = []
                 flattenArray(groupedNodes, flat);
                 let primeDimensions = findContentDimensions(flat);

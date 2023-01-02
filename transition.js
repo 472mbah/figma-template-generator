@@ -123,5 +123,21 @@ const convertFieldToText = (field) => {
     console.log(strs)
 }
 
+const jsonFieldConverter = (key) => {
+    let characters = key.split('');
+    if (!characters.length) return -1;
+    let firstChar = characters.shift();
+    if (!firstChar) return -1;
+    firstChar = firstChar.toUpperCase();
+    let newChars = characters.map(char=>{
+        if (char==='_')
+            return ' ';
+        if (char.toUpperCase()===char) 
+            return ` ${char}`
+        return char;
+    })
+    return `${firstChar}${newChars.join('')}`;
+}
+
 // convertFieldToText('goodMorning')
-console.log(createRandomFigmaColour('full'))
+console.log(jsonFieldConverter('coolWorldNice'))

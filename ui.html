@@ -63,7 +63,21 @@
 
 <script>
 
-
+  const jsonFieldConverter = (key) => {
+      let characters = key.split('');
+      if (!characters.length) return -1;
+      let firstChar = characters.shift();
+      if (!firstChar) return -1;
+      firstChar = firstChar.toUpperCase();
+      let newChars = characters.map(char=>{
+          if (char==='_')
+              return ' ';
+          if (char.toUpperCase()===char) 
+              return ` ${char}`
+          return char;
+      })
+      return `${firstChar}${newChars.join('')}`;
+  }
 
   const createRandomString = (size=100) => {
     let letters = ['a', ' ', 'b', 'c',  'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', ' ', 'o', 'p', 'q', 'r', 's', 't', 'u', ' ', 'v', 'w', 'x', ' ', 'y', 'z'];
@@ -252,14 +266,14 @@
     return [{type:'SOLID', color:{ r:r/255, g:g/255, b:b/255 }}]
   }
   
-  const produceInputFields = (fields, form, parentField, manageClassData=false) => {
+  const produceInputFields = (fields, form, parentField, manageClassData=false, contentFieldConversion={}) => {
     const root = document.documentElement;
     Object.keys(fields).forEach(key=>{
       let { value, type, max, min, hideItem, hideOn, defaultVisibility, options, multipleHide } = fields[key];
       let container = document.createElement('div');
       container.className = 'row gap1 space-between'
       let label = document.createElement('label')
-      label.innerText = key;
+      label.innerText = contentFieldConversion.hasOwnProperty(key) ? contentFieldConversion[key] : key;
       container.appendChild(label);
 
       if (manageClassData) {
@@ -397,7 +411,7 @@
     })
   }
 
-  const produceTemplateBlock = (styleForm, manageClassData=true) => {
+  const produceTemplateBlock = (styleForm, manageClassData=true, fieldConversions={}, contentFieldConversion={}) => {
 
     Object.keys(styleForm).forEach((item, i)=>{
 
@@ -410,7 +424,7 @@
       miniNav.appendChild(header);
       miniNav.className = 'stickTop row gap1 center-align'
 
-      header.innerHTML = item;
+      header.innerHTML = fieldConversions.hasOwnProperty(item) ? fieldConversions[item] : item;
       header.style.width = '100%';
       parent.appendChild(miniNav);
 
@@ -430,7 +444,7 @@
 
       // styleForm[item] = { ...styleForm[item] }
 
-      produceInputFields(styleForm[item], form, item, manageClassData);
+      produceInputFields(styleForm[item], form, item, manageClassData, contentFieldConversion);
 
       document.getElementById('main').append(parent);
 
@@ -553,6 +567,12 @@
 
   }
 
+  const convertVariableNames = (fields) => {
+      let out = {};
+      Object.keys(fields).forEach(fieldName => out[fieldName] = jsonFieldConverter(fieldName))
+      return out;
+  }
+
 </script>
 
 <div class="stickTop row gap1">
@@ -611,20 +631,27 @@ document.getElementById('create').onclick = () => {
   }
 
   let keyForm = produceKeyForm(stepOneData, stylingOpts)
+  let stepOneDataTransform = convertVariableNames(stepOneData);
+  let stepOneDataContentsTransform = convertVariableNames(stylingOpts);
   let containerKeyForm = produceKeyForm({ container:null }, containerStylingOpts);
+  let containerKeyFormContentsTransform = convertVariableNames(containerStylingOpts);
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
+  let blockKeyContentsTransform = convertVariableNames(blockStylingOpts);
+
+  console.log(stepOneDataContentsTransform, containerKeyFormContentsTransform, blockKeyContentsTransform);
+
   // document.getElementById('create').onclick = () => extractInputs(keyForm)
   document.getElementById('create').innerText = "Manage container"
   document.getElementById('create').onclick = () => {
 
     document.getElementById('main').innerHTML = ""
-    produceTemplateBlock(containerKeyForm, true);
+    produceTemplateBlock(containerKeyForm, true, {}, containerKeyFormContentsTransform);
     document.getElementById('create').innerText = "Manage Blocks"
 
     document.getElementById('create').onclick = () => {
         document.getElementById('create').innerText = "Generate Items"
         document.getElementById('main').innerHTML = ""
-        produceTemplateBlock(blockKeyForm, true);
+        produceTemplateBlock(blockKeyForm, true, {}, blockKeyContentsTransform);
 
         document.getElementById('create').onclick = () => {
 
@@ -641,7 +668,7 @@ document.getElementById('create').onclick = () => {
   }
 
   document.getElementById('main').innerHTML = ""
-  produceTemplateBlock(keyForm);
+  produceTemplateBlock(keyForm, true, stepOneDataTransform, stepOneDataContentsTransform);
 
 
 }
