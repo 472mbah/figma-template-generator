@@ -62,6 +62,9 @@
 
 
 <script>
+
+
+
   const createRandomString = (size=100) => {
     let letters = ['a', ' ', 'b', 'c',  'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', ' ', 'o', 'p', 'q', 'r', 's', 't', 'u', ' ', 'v', 'w', 'x', ' ', 'y', 'z'];
     let characters = [];
@@ -136,6 +139,17 @@
           return "false"
       }
   }
+
+  const createRandomFigmaColour = (range='full') => { 
+
+    let min = range === 'full' || range === 'dark' ? 0 : 255/2;
+    let max = range === 'full' || range === 'bright' ? 255 : 255/2;
+    let colours = { r:undefined, g:undefined, b:undefined };
+    Object.keys(colours).forEach(key=>colours[key]=parseInt(createRandomNumber(min, max)) / 255);
+    return [ { color:colours, type: 'SOLID' } ]
+
+  }
+
 </script>
 
 <script>
@@ -202,6 +216,9 @@
     
     direction: {value:'vertical', type:'select-options', options:['horizontal', 'vertical']},
     batchSize: { value:3, type:'number' },
+
+    randomBlockColours: { value:true, type:'boolean', defaultVisibility:'flex' },
+    randomBlockColourRange: {value:'full', type:'select-options', options:['full', 'bright', 'light']},
 
     matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
     matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
@@ -432,8 +449,14 @@
     return newItem;
   }
 
-  const checkDimensionOptions = (styling, containerOptions) => {
+  const checkDimensionOptions = (styling, containerOptions, blockOptions, indivProps) => {
 
+      if (blockOptions.block.randomBlockColours) {
+          indivProps.fills = 
+            createRandomFigmaColour(blockOptions.block.randomBlockColourRange)
+      }
+
+    // randomBlockColours, randomBlockColourRange
 
       if (containerOptions.container.width > -1){
 
@@ -508,13 +531,15 @@
 
     let containerStylingValue = grabValueField(containerStyling);
     let grabbedStyling = grabValueField({...fieldStyling});
+    let condenseBlockOptions = grabValueField({...blockOptions})
     userFields = randomiseValues(userFields[0], grabbedStyling, grabValueField({...blockOptions}));
     let alignInfo = identifyAlignOptions(blockOptions);
     let blocks = userFields.map(fields=>
       {
           let newStyling = JSON.parse(JSON.stringify(grabbedStyling));
-          checkDimensionOptions(newStyling, containerStylingValue);
-          return {contents: convertObjectIntoCollectionArr(fields, newStyling)}
+          let indivProps = {};
+          checkDimensionOptions(newStyling, containerStylingValue, condenseBlockOptions, indivProps);
+          return {contents: convertObjectIntoCollectionArr(fields, newStyling), indivProps }
       }
     )
 

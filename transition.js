@@ -47,7 +47,7 @@ const roundDecimalNumber = (value, decimalPoints) => {
 }
 
 const createRandomNumber = (min, max, type, unit, round) => {
-    let number = min + (Math.random()*max);
+    let number = min + (Math.random()*(max-min));
     if (type==='decimal') return (round !== undefined ? roundDecimalNumber(number, round) : number) + (unit ? unit : '');
     return Math.floor(number) + (unit ? unit : '');
 }
@@ -107,10 +107,21 @@ const createRandomBoolean = (format='yes/no') => {
 // console.log(createRandomBoolean());
 
 
-const convertFieldToText = (field) => {
-    let strs = field.split(/[A-Z]/);
-    console.log(strs)
+// colour range (full) (dark) (bright)
+const createRandomFigmaColour = (range='full') => { 
+
+    let min = range === 'full' || range === 'dark' ? 0 : 255/2;
+    let max = range === 'full' || range === 'bright' ? 255 : 255/2;
+    let colours = { r:undefined, g:undefined, b:undefined };
+    Object.keys(colours).forEach(key=>colours[key]=parseInt(createRandomNumber(min, max)) / 255);
+    return [ { color:colours, type: 'SOLID' } ]
 
 }
 
-convertFieldToText('goodMorning')
+const convertFieldToText = (field) => {
+    let strs = field.split(/[A-Z]/);
+    console.log(strs)
+}
+
+// convertFieldToText('goodMorning')
+console.log(createRandomFigmaColour('full'))

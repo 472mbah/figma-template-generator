@@ -325,7 +325,7 @@ const createBlock = (data) => {
             let primeRect = figma.createRectangle();
 
             let groupedNodes = [];
-            let { contents } = section;
+            let { contents, indivProps } = section;
             let { align, gap, contentAlign, matchWidth, matchHeight, dynamicBlock, cornerRadius, fills, strokes, strokeWeight, padding, tightRadius } = data;
             let zigZagRight = true;
 
@@ -395,13 +395,14 @@ const createBlock = (data) => {
             }
 
             let needExtraRectangle = false;
-
+            let useIndivFills = (indivProps && Array.isArray(indivProps.fills) && indivProps.fills.length)
             let needBlock = 
-                padding!==undefined && padding > 0 ||
-                cornerRadius!==undefined && cornerRadius > 0 ||
-                strokeWeight!==undefined && strokeWeight > 0 ||
+                (padding!==undefined && padding > 0) ||
+                (cornerRadius!==undefined && cornerRadius > 0) ||
+                (strokeWeight!==undefined && strokeWeight > 0) ||
                 (Array.isArray(strokes) && strokes.length) ||
-                (Array.isArray(fills) && fills.length)
+                (Array.isArray(fills) && fills.length) || useIndivFills
+                
 
                 
             if (needBlock) {
@@ -418,7 +419,7 @@ const createBlock = (data) => {
                         contentStartY: primeDimensions.yMin - padding,
                         padding,
                         strokes, 
-                        fills,
+                        fills: useIndivFills ? indivProps.fills : fills,
                         strokeWeight, 
                         cornerRadius
                     }, primeRect)
