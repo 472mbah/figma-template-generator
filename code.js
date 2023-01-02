@@ -316,6 +316,7 @@ const createBlock = (data) => {
         let contentStartY = data.startFromY || 100;
         
         let maxYValue = contentStartY - blockAlignDistance;
+        let maxXValue = contentStartX - blockAlignDistance;
 
         makeValuesConsistent(data, checklistOuter);
 
@@ -475,7 +476,20 @@ const createBlock = (data) => {
 
                 }else {
 
+                    let gridStatus = Math.floor(gridLevelCounter%alignInfo.batchSize);
+                    let reset = gridStatus===(alignInfo.batchSize-1);
 
+                    // let tempText = figma.createText();
+                    // tempText.characters = `${gridLevelCounter} ( ${contentStartX}, ${contentStartY} ) - counter:${gridLevelCounter}, modulo:${gridStatus}, reset:${reset.toString()}`;
+                    // tempText.x = contentStartX;
+                    // tempText.y = contentStartY;
+
+                    contentStartX = reset ? blockDimensions.xMax + blockAlignDistance : maxXValue + blockAlignDistance; 
+                    contentStartY = reset ? 100 : blockDimensions.yMax + blockAlignDistance;
+
+                    if (reset) maxXValue = blockDimensions.xMax;
+
+                    gridLevelCounter++;
 
                 }
 
