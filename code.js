@@ -1,5 +1,5 @@
 
-figma.showUI(__html__, {width: 300, height: 430});
+figma.showUI(__html__, {width: 350, height: 430});
 
 figma.loadFontAsync({ family: "Inter", style: "Regular" })
 figma.loadFontAsync({ family: "Roboto", style: "Regular" })
@@ -105,6 +105,7 @@ const identifyTextDimensions = (inputInfo, textNode) => {
 
             switch (style.type) {
                 case 'font':
+                    cleanFills(style.value)
                     textNode.setRangeFontName( range[0], range[1], style.value );
                     break;
                 case 'fill':
@@ -159,6 +160,21 @@ const identifyTextDimensions = (inputInfo, textNode) => {
 
 }
 
+const cleanFills = (fills) => {
+    if (!Array.isArray(fills)) fills = [];
+    fills.forEach((f, i)=>{
+        let color = f.color;
+        fills[i].type = 'SOLID'
+        if (color===undefined) {
+            fills[i].color = { r:0, g:0, b:0 }
+        }else {
+            if (color.r > 1 || color.r < 0) fills[i].color.r = 1;
+            if (color.g > 1 || color.g < 0) fills[i].color.g = 1;
+            if (color.b > 1 || color.b < 0) fills[i].color.b = 1;    
+        }
+    })
+}
+
 const identifyBoxDimensions = (inputInfo, containerNode) => {
 
     let { width, height, padding, contentStartX, contentStartY, strokes, strokeWeight, cornerRadius, fills } = inputInfo;
@@ -178,6 +194,7 @@ const identifyBoxDimensions = (inputInfo, containerNode) => {
     let doublePadding = (padding) * 2;
     
     if (Array.isArray(fills)) {
+        cleanFills(fills);
         containerNode.fills = fills;
         // [{ type: 'SOLID', color: { r: 255/255, g: 255/255, b: 255/255 } }]
     }

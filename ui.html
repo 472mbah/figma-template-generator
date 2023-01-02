@@ -1,8 +1,8 @@
 <style>
 
   body {
-    --max-width-text-area: calc(300px - 2em);
-    --max-height-text-area: calc(300px - 2em);
+    --max-width-text-area: 330px;
+    --max-height-text-area: 300px;
   }
 
   textarea {
@@ -13,6 +13,7 @@
     max-height: var(--max-height-text-area);
     min-height: var(--max-height-text-area);
     padding: 1em;
+    background-color: #f3f3f3;
   }
 
   .row {
@@ -45,8 +46,16 @@
     position: sticky;
     width: 100%;
     background: #fff;
-    top: 0;
+    top: 30px;
     border-bottom: 1px solid #000;
+  }
+
+  .superStickTop {
+    top: 0;
+    z-index: 10;
+    height: 30px;
+    background: #fff;
+    width: 100%;
   }
 
   .stickTop button {
@@ -173,23 +182,26 @@
     padding: {value:0, type:'number', min:0},
     width: {value:-1, type:'number', min:-1},
     height: {value:-1, type:'number', min:-1}, 
-    strokes: {value:[], type:'figma-colour'},
+    'attach-field': {value:true, type:'boolean', min:1 },
+    strokes: {value:[{ type:'SOLID', color:{r:0, g:0, b:0} }], type:'figma-colour'},
+    fills: {value:[], type:'figma-colour'},
+    strokeWeight:{value:0, type:'number', min:0},
     dataType: {value:'none', type:'select-options', 
               multipleHide:
               [
                   {
                     hideItem:['dateFormat', 'language',
-                             'booleanFormat', 'minRandomValue', 'maxRandomValue'],
+                             'booleanFormat', 'minRandomValue', 'maxRandomValue', 'unit', 'roundDecimals'],
                     hideOn:'string'
                   },
                   {
                     hideItem:['dateFormat', 'language',
-                             'booleanFormat', 'minRandomValue', 'maxRandomValue'],
+                             'booleanFormat', 'minRandomValue', 'maxRandomValue', 'randomStringLength', 'unit', 'roundDecimals'],
                     hideOn:'none'
-                  },                  
+                  },                                    
                   {
                     hideItem:['dateFormat', 'language',
-                             'booleanFormat', 'randomStringLength'],
+                             'booleanFormat', 'randomStringLength', 'roundDecimals'],
                     hideOn:'integer'
                   },
                   {
@@ -199,12 +211,12 @@
                   },  
                   {
                     hideItem:['dateFormat', 'language',
-                             'minRandomValue', 'maxRandomValue', 'randomStringLength'],
+                             'minRandomValue', 'maxRandomValue', 'randomStringLength', 'unit', 'roundDecimals'],
                     hideOn:'boolean'
                   },
                   {
                     hideItem:['language',
-                             'minRandomValue', 'maxRandomValue', 'randomStringLength'],
+                             'minRandomValue', 'maxRandomValue', 'randomStringLength', 'unit', 'roundDecimals'],
                     hideOn:'date'
                   },                                    
               ],
@@ -217,27 +229,26 @@
     booleanFormat: {value:'yes/no', type:'select-options', options:['yes/no', 'true/false'], defaultVisibility:'none'},
     minRandomValue:{value:0, type:'number', defaultVisibility:'none'},
     maxRandomValue:{value:100, type:'number', defaultVisibility:'none'},
-    strokeWeight:{value:1, type:'number', min:0},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
-    textStyling: {value:[], type:'ignore', min:1 },
-    // {type:'font', value:{ family: "Roboto", style: "Regular" }}
+    textStyling: {value:[], type:'ignore' },
   }
 
   let containerStylingOpts = {
-    padding: {value:0, type:'number', min:0},
-    gap: {value:10, type:'number', min:0},
+    padding: {value:10, type:'number', min:0},
+    gap: {value:5, type:'number', min:0},
     width: {value:-1, type:'number', min:-1},
-    strokes: {value:[], type:'figma-colour'},
-    strokeWeight:{value:0, type:'number', min:0, max:3},
-    fills: {value:[], type:'figma-colour'},
+    height: {value:-1, type:'number', min:-1},
+    strokes: {value:[{ type:'SOLID', color:{r:0, g:0, b:0} }], type:'figma-colour'},
+    strokeWeight:{value:1, type:'number', min:0, max:3},
+    fills: {value:[{ type:'SOLID', color:{r:1, g:1, b:1} }], type:'figma-colour'},
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     align: {value:'vertical', type:'select-options', options:['vertical', 'horizontal', 'zigzag', 'diagonal']},
   }
 
   let blockStylingOpts = {
     gap:{value:10, type:'number', defaultVisibility:'flex' },
-    quantity: { value:20, type:'number', min:1, defaultVisibility:'flex' },
+    quantity: { value:3, type:'number', min:1, defaultVisibility:'flex' },
     randomValues: { value:false, type:'boolean', defaultVisibility:'flex' },
     directionStyle: {value:'grid', type:'select-options', options:['grid', 'flex'],
         multipleHide:[
@@ -249,10 +260,10 @@
     },
     direction: {value:'vertical', type:'select-options', options:['horizontal', 'vertical']},
     batchSize: { value:3, type:'number' },
-    randomBlockColours: { value:true, type:'boolean', defaultVisibility:'flex' },
+    randomBlockColours: { value:false, type:'boolean', defaultVisibility:'flex' },
     randomBlockColourRange: {value:'full', type:'select-options', options:['full', 'bright', 'light']},
-    matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
-    matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
+    // matchAllWidths: { value:true, type:'boolean', defaultVisibility:'flex' },
+    // matchAllHeights: { value:true, type:'boolean', defaultVisibility:'flex' },
     startFromX: { value:100, type:'number', defaultVisibility:'flex' },
     startFromY: { value:100, type:'number', defaultVisibility:'flex' },
   }
@@ -285,8 +296,8 @@
 
   const dynamicAppendFeature = (selectType, {form, resetValues}) => {
     let quadrantData = resetValues.indivStyleForm;
+    if (selectType==='none') return;
     if (quadrantData.hasOwnProperty(selectType)) return;
-    // console.log('user selected', selectType, resetValues)
 
     let additionalObj = 
         /fill/.test(selectType) ? 
@@ -326,9 +337,9 @@
       if (quadrantData.hasOwnProperty('textStylingAdditions')) return;
       
       let additionalObj = {
-        value:'fill',
+        value:'none',
         type:'select-options',
-        options: [ 'fill', 'decoration', 'spacing', 'attach-field', 'field-fill', 'field-decoration', 'field-spacing' ],
+        options: [ 'none', 'fill', 'decoration', 'spacing', 'attach-field', 'field-fill', 'field-decoration', 'field-spacing' ],
         callbackParams: { form, resetValues },
         callback: dynamicAppendFeature
       }
@@ -343,8 +354,6 @@
         resetValues.contentFieldConversion,
       )
 
-      // console.log(form, resetValues)
-
   }
 
   const produceInputFields = (fields, form, parentField, manageClassData=false, contentFieldConversion={}) => {
@@ -354,9 +363,12 @@
         defaultVisibility, options, multipleHide, callbackParams, callback } = fields[key];
       let container = document.createElement('div');
       container.className = 'row gap1 space-between'
-      let label = document.createElement('label')
-      label.innerText = contentFieldConversion.hasOwnProperty(key) ? contentFieldConversion[key] : key;
-      container.appendChild(label);
+      
+      if (type!=='ignore') {
+        let label = document.createElement('label')
+        label.innerText = contentFieldConversion.hasOwnProperty(key) ? contentFieldConversion[key] : key;
+        container.appendChild(label);
+      }
 
       if (manageClassData) {
         let viewProperty = `--figma-design-generator-var-${key}`
@@ -509,7 +521,17 @@
     })
   }
 
-  const produceTemplateBlock = (styleForm, manageClassData=true, fieldConversions={}, contentFieldConversion={}, addTextStyling) => {
+  const produceTemplateBlock = (styleForm, manageClassData=true, fieldConversions={}, contentFieldConversion={}, 
+  addTextStyling, 
+  prompt
+  ) => {
+
+    let numberOfKeys = Object.keys(styleForm).length
+    if (prompt) {
+      let p = document.createElement('p')
+      p.innerText = prompt;
+      document.getElementById('main').appendChild(p);
+    }
 
     Object.keys(styleForm).forEach((item, i)=>{
 
@@ -527,11 +549,11 @@
       parent.appendChild(miniNav);
 
       let form = document.createElement('form');
-      form.className = 'dynamic-form col gap_5'
-      form.style.display = 'none'
+      form.className = 'dynamic-form col gap_5';
+      form.style.display = numberOfKeys <= 2 ? 'flex' : 'none';
 
       let toggleButton = document.createElement('button');
-      toggleButton.innerText = "Show"
+      toggleButton.innerText = numberOfKeys <= 2 ? "Hide" : "Show"
       toggleButton.onclick = () => {
         let isVisible = form.style.display === 'flex';
         form.style.display = isVisible ? 'none' : 'flex'
@@ -578,13 +600,9 @@
   const grabValueField = (item, hasTextStyling=false) => {
     if (hasTextStyling) {
       removeIrregularItems(item);
-      console.log('started 1');
-      console.log(item);
     }
     let newItem = JSON.parse(JSON.stringify(item));
-    if (hasTextStyling) {
-      console.log('started 2')
-    }
+
     Object.keys(newItem).forEach((it)=>{
       let properties = newItem[it];
       Object.keys(properties).forEach((prop)=>{
@@ -713,7 +731,6 @@
 
     let containerStylingValue = grabValueField(containerStyling);
     let grabbedStyling = grabValueField({...fieldStyling}, true);
-    // console.log(fieldStyling)
     let condenseBlockOptions = grabValueField({...blockOptions})
 
 
@@ -747,31 +764,52 @@
 
 </script>
 
-<div class="stickTop row gap1">
-  <button id="create">Create</button>
+<div class="stickTop superStickTop row gap1">
+  <button id="create">Next</button>
   <button id="cancel">Cancel</button>
+  <button disabled>-1 = content-dimension</button>
 </div>
 
 <div id="main">
-  <h2>Enter JSON template below</h2>
+  <div class="flex row space-between center-align"> 
+    <h2>JSON visualiser</h2>
+    <div>
+      <button id="prompt">Show Help</button>
+    </div>
+  </div>
+  <ol id="ol">
+    <li>Enter a JSON schema into the box below. This can be a single object representing an entity, or multiple wrapped into an array.</li>
+    <li>Style the attributes and choose their data types (if you are planning to have multiple random values later).</li>
+    <li>Style the container for a single entity.</li>
+    <li>Choose if you want multiple random entities and how you want them laid out.</li>
+    <li>Use the 'next' to move forward right at the top</li>
+  </ol>
   <textarea id="json" value="5"></textarea>
   <p></p>
 </div>
 
-
-
 <script>
+
+let p = document.getElementById("prompt");
+let ol = document.getElementById("ol");
+ol.style.display = 'none'
+ol.style.flexDirection = 'column'
+p.onclick = () => {
+  if (p.innerText==='Show Help') {
+    p.innerText = 'Hide Help'
+    ol.style.display = 'flex';
+  }else {
+    p.innerText = 'Show Help'
+    ol.style.display = 'none';
+  }
+}
+
 
 document.getElementById('json').value = 
 `
 {
-  "name":"My name is Momodou!",
-  "age":"3232",
-  "message": "Hello world, how is it going?",
-  "another": "Hello world, how is it going?",
-  "another2": "Hello world, how is it going?",
-  "another3": "short",
-  "another3": "lorem ipsum something garbage and yes thats all good!"
+  "message":"Welcome to JSON navigator.",
+  "time":"12/32/32"
 }
 `
 
@@ -810,19 +848,18 @@ document.getElementById('create').onclick = () => {
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
   let blockKeyContentsTransform = convertVariableNames(blockStylingOpts);
 
-
   // document.getElementById('create').onclick = () => extractInputs(keyForm)
-  document.getElementById('create').innerText = "Manage container"
+  // document.getElementById('create').innerText = "Manage container"
   document.getElementById('create').onclick = () => {
 
     document.getElementById('main').innerHTML = ""
-    produceTemplateBlock(containerKeyForm, true, {}, containerKeyFormContentsTransform);
-    document.getElementById('create').innerText = "Manage Blocks"
+    produceTemplateBlock(containerKeyForm, true, {}, containerKeyFormContentsTransform, false, "Manager how containers look for each entity.");
+    // document.getElementById('create').innerText = "Manage Blocks"
 
     document.getElementById('create').onclick = () => {
-        document.getElementById('create').innerText = "Generate Items"
+        document.getElementById('create').innerText = "Generate!"
         document.getElementById('main').innerHTML = ""
-        produceTemplateBlock(blockKeyForm, true, {}, blockKeyContentsTransform);
+        produceTemplateBlock(blockKeyForm, true, {}, blockKeyContentsTransform, false, "Create multiple, random versions of your entity and choose how you organise them amongst other options.");
 
         document.getElementById('create').onclick = () => {
 
@@ -839,7 +876,7 @@ document.getElementById('create').onclick = () => {
   }
 
   document.getElementById('main').innerHTML = ""
-  produceTemplateBlock(keyForm, true, stepOneDataTransform, stepOneDataContentsTransform, true);
+  produceTemplateBlock(keyForm, true, stepOneDataTransform, stepOneDataContentsTransform, true, "Style the fields in your entity here.");
 
 
 }
