@@ -436,8 +436,6 @@ const createBlock = (data) => {
             let flattenedBlock = [];
             flattenArray(groupedNodes, flattenedBlock)
             let blockDimensions = findContentDimensions(flattenedBlock);
-            
-            // alignInfo { type, direction, batchSize }
 
             if (alignInfo.type==='flex') {
                 if (alignInfo.direction==='horizontal') {
@@ -453,10 +451,6 @@ const createBlock = (data) => {
 
                     let gridStatus = Math.floor(gridLevelCounter%alignInfo.batchSize);
                     let reset = gridStatus===(alignInfo.batchSize-1);
-                    // let tempText = figma.createText();
-                    // tempText.characters = `${gridLevelCounter} ( ${contentStartX}, ${contentStartY} ) - counter:${gridLevelCounter}, modulo:${gridStatus}, reset:${reset.toString()}`;
-                    // tempText.x = contentStartX;
-                    // tempText.y = contentStartY;
 
                     contentStartX = reset ? 100 : blockDimensions.xMax + blockAlignDistance;
                     contentStartY = reset ? blockDimensions.yMax + blockAlignDistance : maxYValue + blockAlignDistance;
@@ -465,24 +459,11 @@ const createBlock = (data) => {
 
                     gridLevelCounter++;
 
-                    // if (gridStatus === 0) {
-                    //     maxYValue = blockDimensions.yMax;
-                    //     contentStartX = 100;
-                    // }
-
-                    // console.log(gridLevelCounter-1, maxYValue, contentStartY);
-
-                    // previousGridStatus = gridStatus;
 
                 }else {
 
                     let gridStatus = Math.floor(gridLevelCounter%alignInfo.batchSize);
                     let reset = gridStatus===(alignInfo.batchSize-1);
-
-                    // let tempText = figma.createText();
-                    // tempText.characters = `${gridLevelCounter} ( ${contentStartX}, ${contentStartY} ) - counter:${gridLevelCounter}, modulo:${gridStatus}, reset:${reset.toString()}`;
-                    // tempText.x = contentStartX;
-                    // tempText.y = contentStartY;
 
                     contentStartX = reset ? blockDimensions.xMax + blockAlignDistance : maxXValue + blockAlignDistance; 
                     contentStartY = reset ? 100 : blockDimensions.yMax + blockAlignDistance;
@@ -493,10 +474,7 @@ const createBlock = (data) => {
 
                 }
 
-
             }
-
-
 
             nodes.push(groupedNodes)
     

@@ -62,7 +62,6 @@
 
 
 <script>
-
   const jsonFieldConverter = (key) => {
       let characters = key.split('');
       if (!characters.length) return -1;
@@ -186,6 +185,7 @@
     strokeWeight:{value:1, type:'number', min:0},
     fills: {value:[], type:'figma-colour'},
     fieldFills: {value:[{ type: 'SOLID', color: {r:1, g:0, b:0} }], type:'figma-colour'},
+    fontColour: {value:[{ type: 'SOLID', color: {r:0, g:1, b:0} }], type:'figma-colour'},
     addFields: {value:true, type:'boolean', defaultVisibility:'flex' },
     cornerRadius: {value:[0, 0, 0, 0], type:'number-option-4', min:0 },
     fontSize: {value:12, type:'number', min:1 },
@@ -487,46 +487,63 @@
 
   }
 
-  const randomiseValues = (schema, fieldStyling, blockOptions) => {
+  const randomiseValues = (schema, fieldStyling, blockOptions, previousOpts) => {
     // fields -> create N versions with random values
+    let createNewValues = blockOptions.block.randomValues
     let numberToCreate = blockOptions.block.quantity;
-    let newItems = [];
+    let newItems = createNewValues ? [] : previousOpts;
 
-    for (let k = 0; k < numberToCreate; k++) {
-        let newVersion = JSON.parse(JSON.stringify(schema));
-        Object.keys(newVersion).forEach(field=>{
-            let dataType = fieldStyling[field].dataType;
-            let value = newVersion[field]
+    if (createNewValues) {
+        for (let k = 0; k < numberToCreate; k++) {
+            let newVersion = JSON.parse(JSON.stringify(schema));
+            Object.keys(newVersion).forEach(field=>{
+              
+                let dataType = fieldStyling[field].dataType;
+                let value = newVersion[field]
 
-            // 'string', 'integer', 'decimal', 'date', 'boolean'              
-            if (dataType==='string') {
-                newVersion[field] = createRandomString(fieldStyling[field].randomStringLength);
-            }else if (dataType==='date') {
-                newVersion[field] = createRandomDate(fieldStyling[field].dateFormat, fieldStyling[field].language)
-            }else if (dataType==='boolean') {
-                newVersion[field] = createRandomBoolean(fieldStyling[field].booleanFormat)
-            }else {
-              newVersion[field] = createRandomNumber(
-                fieldStyling[field].minRandomValue,
-                fieldStyling[field].maxRandomValue,
-                dataType,
-                fieldStyling[field].unit, 
-                fieldStyling[field].roundDecimals, 
-              );
-            }
+                // 'string', 'integer', 'decimal', 'date', 'boolean'              
+                if (dataType==='string') {
+                    newVersion[field] = createRandomString(fieldStyling[field].randomStringLength);
+                }else if (dataType==='date') {
+                    newVersion[field] = createRandomDate(fieldStyling[field].dateFormat, fieldStyling[field].language)
+                }else if (dataType==='boolean') {
+                    newVersion[field] = createRandomBoolean(fieldStyling[field].booleanFormat)
+                }else {
+                  newVersion[field] = createRandomNumber(
+                    fieldStyling[field].minRandomValue,
+                    fieldStyling[field].maxRandomValue,
+                    dataType,
+                    fieldStyling[field].unit, 
+                    fieldStyling[field].roundDecimals, 
+                  );
+                }
 
-
-            if (fieldStyling[field].addFields) {
-              let tag = field+": ";
-              newVersion[field] = tag+newVersion[field];
-              if (fieldStyling[field].fieldFills.length) {
-                
-                fieldStyling[field].textStyling.push({type:'fill', range:[0, tag.length], value:fieldStyling[field].fieldFills });
-              }
-            }
-        })        
-        newItems.push(newVersion)
+            })        
+            newItems.push(newVersion)
+        }
     }
+
+    Object.keys(schema).forEach(field=>{
+      if (Array.isArray(fieldStyling[field].fontColour) && fieldStyling[field].fontColour.length > 0) {
+        fieldStyling[field].textStyling.push({type:'fill', value:fieldStyling[field].fontColour });
+      }
+    })
+    
+    for (let k = 0; k < newItems.length; k++) {
+      Object.keys(schema).forEach(field=>{
+
+        if (fieldStyling[field].addFields) {
+            let tag = field+": ";
+            newItems[k][field] = tag+newItems[k][field];
+            if (fieldStyling[field].fieldFills.length) {
+              fieldStyling[field].textStyling.push({type:'fill', range:[0, tag.length], value:fieldStyling[field].fieldFills });
+            }
+          }
+      })
+
+    }
+
+
 
     return newItems;
     
@@ -546,7 +563,9 @@
     let containerStylingValue = grabValueField(containerStyling);
     let grabbedStyling = grabValueField({...fieldStyling});
     let condenseBlockOptions = grabValueField({...blockOptions})
-    userFields = randomiseValues(userFields[0], grabbedStyling, grabValueField({...blockOptions}));
+
+
+    userFields = randomiseValues(userFields[0], grabbedStyling, condenseBlockOptions, userFields);
     let alignInfo = identifyAlignOptions(blockOptions);
     let blocks = userFields.map(fields=>
       {
@@ -638,7 +657,6 @@ document.getElementById('create').onclick = () => {
   let blockKeyForm = produceKeyForm({ block:null }, blockStylingOpts);
   let blockKeyContentsTransform = convertVariableNames(blockStylingOpts);
 
-  console.log(stepOneDataContentsTransform, containerKeyFormContentsTransform, blockKeyContentsTransform);
 
   // document.getElementById('create').onclick = () => extractInputs(keyForm)
   document.getElementById('create').innerText = "Manage container"
